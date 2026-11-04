@@ -168,6 +168,8 @@ uv run app.py                           # http://localhost:8000
 
 ### Front end
 
+The page opens on an NYC bodega storefront, drawn in HTML/CSS: a brick façade, a back-lit DELI · GROCERY sign, a neon OPEN sign, marker posters and a bodega cat. Click (or press Enter on) the doors and they swing open as the view moves through the doorway. Inside is a chalkboard bodega menu: corridors are menu items with dotted price leaders, example questions are "Today's specials", researchers show up as order tickets, and citations look like price tags. "Skip the door", reduced-motion settings and `?q=` links skip the animation.
+
 `index.html` shows:
 - what the agent explores, who it's for, and how to use it
 - corridor cards with live stats, which also work as the corridor picker

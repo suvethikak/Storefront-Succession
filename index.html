@@ -6,398 +6,604 @@
         <title>What Was Here Before</title>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-        <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Cabin+Sketch:wght@400;700&family=Fredericka+the+Great&family=Patrick+Hand&family=Permanent+Marker&display=swap" rel="stylesheet" />
         <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
         <style>
             :root {
-                --bg: #f7f3ec;
-                --paper: #fffdf8;
-                --ink: #1d1a16;
-                --muted: #6f675c;
-                --line: #e2d9ca;
-                --awning: #2f5d50;
-                --awning-2: #f3ead9;
-                --accent: #b5442c;
-                --chip: #ece3d3;
-                --shadow: 0 1px 0 rgba(0, 0, 0, 0.04), 0 8px 24px -16px rgba(40, 30, 10, 0.25);
-                --c-bodega: #c0692b;
-                --c-laundry: #3b77a8;
-                --c-food: #b5442c;
-                --c-cafe: #8a5a3c;
-                --c-bar: #7d3c8a;
-                --c-chain: #444;
-                --c-phone: #2f8a7d;
-                --c-retail: #9a8a3a;
-                --c-services: #6b7a8f;
-                --c-vacant: #b9b0a2;
-                --c-other: #9c9387;
-            }
-            @media (prefers-color-scheme: dark) {
-                :root:not([data-theme="light"]) {
-                    --bg: #171512;
-                    --paper: #201d19;
-                    --ink: #eee7dc;
-                    --muted: #a39a8c;
-                    --line: #36312a;
-                    --awning: #3f7a69;
-                    --awning-2: #2a2620;
-                    --accent: #e0775c;
-                    --chip: #2e2a24;
-                    --shadow: none;
-                    --c-chain: #b8b0a4;
-                    --c-vacant: #5d574e;
-                }
-            }
-            :root[data-theme="dark"] {
-                --bg: #171512;
-                --paper: #201d19;
-                --ink: #eee7dc;
-                --muted: #a39a8c;
-                --line: #36312a;
-                --awning: #3f7a69;
-                --awning-2: #2a2620;
-                --accent: #e0775c;
-                --chip: #2e2a24;
-                --shadow: none;
-                --c-chain: #b8b0a4;
-                --c-vacant: #5d574e;
+                --board: #1b201d;
+                --chalk: #f2f0e6;
+                --chalk-dim: #b4b3a8;
+                --chalk-faint: rgba(242, 240, 230, 0.28);
+                --yellow: #f6dd6b;
+                --pink: #f4a3b6;
+                --blue: #9ad0ee;
+                --green: #a9e3a1;
+                --orange: #f6b26b;
+                --violet: #c9b0f0;
+                --paper: #fbf8ef;
+                --ink: #23201b;
+                --sign-text: #ffd23f;
+                --wood-1: #6b4426;
+                --wood-2: #4a2d18;
+                --chalk-glow: 0 0 1px rgba(242, 240, 230, 0.55), 0 0 8px rgba(242, 240, 230, 0.08);
             }
             * { box-sizing: border-box; }
+            html, body { margin: 0; }
             body {
-                margin: 0;
-                background: var(--bg);
-                color: var(--ink);
-                font: 16px/1.55 "IBM Plex Sans", system-ui, sans-serif;
+                background: var(--board);
+                color: var(--chalk);
+                font: 19px/1.5 "Patrick Hand", "Comic Sans MS", cursive;
+                overflow-x: hidden;
             }
-            body.ctx-hidden { --context-width: 0px; }
-            body.ctx-hidden #context-panel { display: none; }
-            #context-panel { background: var(--paper) !important; color: var(--ink); border-left-color: var(--line) !important; }
-            #context-panel .ctx-head { background: var(--paper) !important; }
+            button { font: inherit; }
 
-            .awning {
-                height: 22px;
-                background: repeating-linear-gradient(90deg, var(--awning) 0 28px, var(--awning-2) 28px 56px);
-                border-bottom: 3px solid var(--awning);
-                -webkit-mask: radial-gradient(14px at 50% 100%, transparent 98%, #000) 0 0 / 28px 100%;
-                mask: radial-gradient(14px at 50% calc(100% + 4px), transparent 98%, #000) 0 0 / 28px 100%;
+            /* ================= OUTSIDE: the storefront ================= */
+            #street {
+                position: fixed; inset: 0; z-index: 20; overflow: hidden;
+                background-color: #7d3423;
+                background-image:
+                    radial-gradient(ellipse at 20% 10%, rgba(255, 255, 255, 0.07), transparent 50%),
+                    radial-gradient(ellipse at 80% 30%, rgba(0, 0, 0, 0.18), transparent 55%),
+                    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='40'%3E%3Crect width='64' height='40' fill='%23843a28'/%3E%3Crect x='2' y='2' width='60' height='16' fill='%23903f2b'/%3E%3Crect x='-30' y='22' width='60' height='16' fill='%237a3322'/%3E%3Crect x='34' y='22' width='60' height='16' fill='%238c3c29'/%3E%3C/svg%3E");
             }
-            main { max-width: 980px; margin: 0 auto; padding: 0 16px 64px; }
-            h1, h2, h3 { font-family: Fraunces, Georgia, serif; font-weight: 700; letter-spacing: -0.01em; margin: 0; }
-            .kicker { font: 500 12px/1 "IBM Plex Mono", monospace; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); }
-            header.hero { padding: 36px 0 12px; }
-            .hero h1 { font-size: clamp(34px, 6vw, 56px); line-height: 1.02; margin: 10px 0 12px; }
-            .hero .tagline { font-size: 19px; color: var(--muted); max-width: 640px; margin: 0; }
-            .about { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 26px 0 8px; }
-            .about div { background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; box-shadow: var(--shadow); }
-            .about h3 { font-size: 15px; margin-bottom: 4px; }
-            .about p { margin: 0; font-size: 14px; color: var(--muted); }
-
-            section.block { margin-top: 32px; }
-            .block > h2 { font-size: 22px; margin-bottom: 4px; }
-            .block > .sub { color: var(--muted); font-size: 14px; margin: 0 0 14px; }
-
-            .corridors { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
-            .corridor {
-                text-align: left; cursor: pointer; font: inherit; color: inherit;
-                background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px;
-                border-top: 5px solid var(--line); transition: border-color 0.15s, transform 0.15s;
+            body.inside #street { display: none; }
+            .scene {
+                height: 100%; display: grid; grid-template-rows: 1fr auto auto minmax(80px, 14vh);
+                transform-origin: 50% 64%;
+                transition: transform 1.2s cubic-bezier(0.55, 0, 0.45, 1) 0.75s, opacity 0.6s ease 1.35s;
             }
-            .corridor:hover { transform: translateY(-1px); }
-            .corridor[aria-pressed="true"] { border-color: var(--awning); border-top-color: var(--awning); outline: 2px solid var(--awning); outline-offset: -2px; }
-            .corridor .name { font-family: Fraunces, Georgia, serif; font-weight: 700; font-size: 17px; }
-            .corridor .hood { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
-            .corridor dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 1px 8px; font: 12px/1.5 "IBM Plex Mono", monospace; }
-            .corridor dt { color: var(--muted); }
-            .corridor dd { margin: 0; text-align: right; }
+            body.entering .scene { transform: scale(3.2); opacity: 0; }
+            .upper { display: flex; align-items: flex-end; justify-content: center; gap: 6vw; padding: 2vh 4vw 3vh; }
+            .upper .win {
+                width: clamp(56px, 9vw, 120px); height: clamp(40px, 10vh, 110px);
+                background: linear-gradient(160deg, #3b4a58, #1d2630 60%, #2c3946);
+                border: 6px solid #d9cfbf; border-bottom-width: 10px; box-shadow: 0 6px 0 rgba(0, 0, 0, 0.25); position: relative;
+            }
+            .upper .win::after { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; width: 5px; background: #d9cfbf; transform: translateX(-50%); }
+            .upper .win.lit { background: linear-gradient(160deg, #f4d58d, #d9a54a); }
 
-            .ask { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 16px; box-shadow: var(--shadow); }
+            .sign {
+                margin: 0 auto; width: min(1100px, 100%);
+                background: linear-gradient(#d42634, #a8151f);
+                border: 6px solid #1d1d1d; border-bottom: none; text-align: center; padding: 1.4vh 12px 1.2vh; position: relative;
+                box-shadow: inset 0 0 40px rgba(255, 220, 120, 0.25), 0 0 30px rgba(255, 200, 80, 0.12);
+            }
+            .sign .big {
+                font-family: Bungee, Impact, sans-serif; color: var(--sign-text); line-height: 1;
+                font-size: clamp(22px, 5.6vw, 64px); letter-spacing: 0.02em;
+                text-shadow: 3px 3px 0 #6b0a10, 0 0 18px rgba(255, 210, 63, 0.35);
+            }
+            .sign .small { font-family: Bungee, Impact, sans-serif; color: #fff; font-size: clamp(10px, 1.7vw, 19px); letter-spacing: 0.12em; margin-top: 0.6vh; }
+            .valance { width: min(1100px, 100%); margin: 0 auto; height: 16px; background: radial-gradient(circle at 12px -2px, #a8151f 12px, transparent 13px) 0 0 / 24px 16px repeat-x; }
+
+            .front {
+                width: min(1100px, 100%); margin: 0 auto; height: clamp(280px, 50vh, 560px);
+                display: grid; grid-template-columns: 1fr auto 1fr;
+                background: #222; border: 10px solid #2a2a2a; border-top-width: 6px; border-bottom: none;
+            }
+            .window {
+                position: relative; overflow: hidden; border-right: 8px solid #2a2a2a;
+                background:
+                    linear-gradient(115deg, transparent 30%, rgba(255, 255, 255, 0.07) 31%, rgba(255, 255, 255, 0.07) 38%, transparent 39%),
+                    linear-gradient(115deg, transparent 55%, rgba(255, 255, 255, 0.05) 56%, rgba(255, 255, 255, 0.05) 60%, transparent 61%),
+                    linear-gradient(180deg, #2f3a33 0%, #1e2621 70%, #151a17 100%);
+            }
+            .window.right { border-right: none; border-left: 8px solid #2a2a2a; }
+            .window::before { /* shelves of cans seen through the glass */
+                content: ""; position: absolute; left: 6%; right: 6%; top: 34%; height: 46%; opacity: 0.45;
+                background:
+                    repeating-linear-gradient(90deg, #c94c3c 0 14px, #e9c46a 14px 26px, #2a9d8f 26px 40px, #f4a261 40px 52px, #6d597a 52px 66px) 0 0 / 100% 22% no-repeat,
+                    linear-gradient(#5a4632, #5a4632) 0 23% / 100% 4px no-repeat,
+                    repeating-linear-gradient(90deg, #e76f51 0 12px, #264653 12px 26px, #e9c46a 26px 38px, #8ab17d 38px 52px) 0 30% / 100% 22% no-repeat,
+                    linear-gradient(#5a4632, #5a4632) 0 53% / 100% 4px no-repeat,
+                    repeating-linear-gradient(90deg, #f4a261 0 16px, #9c6644 16px 28px, #e63946 28px 42px, #a8dadc 42px 54px) 0 60% / 100% 22% no-repeat,
+                    linear-gradient(#5a4632, #5a4632) 0 83% / 100% 4px no-repeat;
+            }
+            .kick { position: absolute; left: 0; right: 0; bottom: 0; height: 13%; background: linear-gradient(#3a3a3a, #262626); border-top: 4px solid #444; }
+            .poster {
+                position: absolute; font-family: "Permanent Marker", cursive; color: #1b1b1b; text-align: center;
+                padding: 8px 10px; line-height: 1.05; box-shadow: 2px 3px 0 rgba(0, 0, 0, 0.3); font-size: clamp(11px, 1.35vw, 18px);
+            }
+            .poster.y { background: #fff35c; }
+            .poster.o { background: #ffad4d; }
+            .poster.p { background: #ff8fc8; }
+            .poster.g { background: #9dff7a; }
+            .poster small { display: block; font-size: 0.7em; }
+            .burst {
+                position: absolute; width: clamp(78px, 10vw, 130px); aspect-ratio: 1; display: grid; place-items: center; text-align: center;
+                background: #fff35c; font-family: "Permanent Marker", cursive; font-size: clamp(11px, 1.3vw, 17px); line-height: 1; color: #d0112b;
+                clip-path: polygon(50% 0, 61% 18%, 82% 8%, 79% 30%, 100% 34%, 85% 50%, 100% 66%, 79% 70%, 82% 92%, 61% 82%, 50% 100%, 39% 82%, 18% 92%, 21% 70%, 0 66%, 15% 50%, 0 34%, 21% 30%, 18% 8%, 39% 18%);
+            }
+            .neon {
+                position: absolute; font-family: Bungee, sans-serif; font-size: clamp(18px, 3vw, 38px); color: #ffd6e4;
+                padding: 2px 12px; border: 3px solid #ff3d7f; border-radius: 14px;
+                text-shadow: 0 0 4px #ff3d7f, 0 0 12px #ff3d7f, 0 0 24px #ff3d7f;
+                box-shadow: 0 0 10px #ff3d7f, inset 0 0 10px #ff3d7f; animation: flicker 6s infinite;
+            }
+            @keyframes flicker { 0%, 91%, 93%, 97%, 100% { opacity: 1; } 92%, 96% { opacity: 0.45; } }
+            .cat { position: absolute; width: clamp(64px, 8vw, 110px); }
+
+            .doors { position: relative; width: clamp(190px, 25vw, 320px); height: 100%; perspective: 1100px; background: #1a1a1a; border: none; padding: 0; cursor: pointer; }
+            .doorway { position: absolute; inset: 14% 4px 0; overflow: hidden; background: radial-gradient(ellipse at 50% 40%, #fff3c4, #f6c766 55%, #d9913a); }
+            .doorway::before {
+                content: ""; position: absolute; left: 8%; right: 8%; top: 26%; bottom: 0;
+                background: repeating-linear-gradient(180deg, transparent 0 22px, rgba(90, 60, 30, 0.45) 22px 26px),
+                    repeating-linear-gradient(90deg, rgba(150, 70, 30, 0.3) 0 10px, transparent 10px 20px);
+            }
+            .doorway .board-peek {
+                position: absolute; left: 20%; right: 20%; top: 6%; height: 14%; background: #1b201d; border: 3px solid #6b4426;
+                font: clamp(8px, 1vw, 13px) "Cabin Sketch", cursive; color: #eee; display: grid; place-items: center;
+            }
+            .transom {
+                position: absolute; left: 0; right: 0; top: 0; height: 14%; background: #2a2a2a; z-index: 2;
+                display: grid; place-items: center; font: clamp(10px, 1.2vw, 14px) Bungee, sans-serif; color: #ffd23f; letter-spacing: 0.1em;
+            }
+            .leaf {
+                position: absolute; top: 14%; bottom: 0; width: 50%; z-index: 3;
+                border: 9px solid #9aa1a6; border-top-width: 10px; border-bottom-width: 26px;
+                background:
+                    linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, 0.16) 36%, rgba(255, 255, 255, 0.16) 44%, transparent 45%),
+                    linear-gradient(180deg, rgba(60, 80, 75, 0.62), rgba(30, 40, 38, 0.72));
+                transition: transform 1.1s cubic-bezier(0.6, 0.05, 0.3, 1); box-shadow: inset 0 0 0 2px #6d7377;
+            }
+            .leaf.l { left: 0; transform-origin: left center; }
+            .leaf.r { right: 0; transform-origin: right center; }
+            .leaf .bar { position: absolute; left: 10%; right: 10%; top: 52%; height: 9px; border-radius: 5px; background: linear-gradient(#e8ecee, #9aa1a6); box-shadow: 0 2px 2px rgba(0, 0, 0, 0.4); }
+            .leaf .sticker { position: absolute; left: 50%; top: 30%; transform: translateX(-50%) rotate(-3deg); background: #fff; color: #c8202f; font: clamp(10px, 1.1vw, 14px) Bungee, sans-serif; padding: 2px 7px; border-radius: 3px; }
+            .leaf.r .sticker { transform: translateX(-50%) rotate(2deg); }
+            .leaf .hours { position: absolute; left: 10%; right: 10%; top: 64%; background: rgba(255, 255, 255, 0.85); color: #222; font: clamp(9px, 0.95vw, 13px)/1.1 "Patrick Hand", cursive; padding: 3px 5px; text-align: center; }
+            .doors:hover .leaf.l, .doors:focus-visible .leaf.l { transform: rotateY(-10deg); }
+            .doors:hover .leaf.r, .doors:focus-visible .leaf.r { transform: rotateY(10deg); }
+            .doors:focus-visible { outline: 4px solid #ffd23f; outline-offset: 4px; }
+            /* listed with :hover too, so a cursor resting on the doors can't hold them nearly shut */
+            body.entering .doors .leaf.l, body.entering .doors:hover .leaf.l { transform: rotateY(-108deg); }
+            body.entering .doors .leaf.r, body.entering .doors:hover .leaf.r { transform: rotateY(108deg); }
+
+            .sidewalk {
+                position: relative; display: flex; justify-content: center; align-items: flex-start;
+                background: linear-gradient(90deg, rgba(0, 0, 0, 0.12) 2px, transparent 2px) 0 0 / 140px 100%, linear-gradient(#9a9a94, #85857f);
+                border-top: 8px solid #6c6c66;
+            }
+            .hint { margin-top: 10px; font: clamp(16px, 2vw, 22px) "Permanent Marker", cursive; color: #fff; text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.45); animation: bob 2.2s ease-in-out infinite; text-align: center; padding: 0 12px; }
+            @keyframes bob { 50% { transform: translateY(-5px); } }
+            .aframe {
+                position: absolute; left: max(12px, calc(50% - 560px)); bottom: 22%; width: clamp(140px, 17vw, 210px);
+                background: var(--board); border: 8px solid var(--wood-1); border-radius: 4px; padding: 10px 12px;
+                font: clamp(12px, 1.3vw, 16px)/1.2 "Cabin Sketch", cursive; color: var(--chalk); text-shadow: var(--chalk-glow);
+                transform: rotate(-2deg); box-shadow: 4px 6px 0 rgba(0, 0, 0, 0.3); z-index: 4;
+            }
+            .aframe b { color: var(--yellow); display: block; font-size: 1.15em; margin-bottom: 4px; }
+            .skip { position: absolute; right: 14px; bottom: 10px; color: #fff; font: 15px "Patrick Hand", cursive; background: none; border: none; cursor: pointer; text-decoration: underline; z-index: 4; }
+
+            @media (max-width: 700px) {
+                .front { grid-template-columns: 1fr auto; }
+                .window.right { display: none; }
+                .window.left .burst, .window.left .poster.y { display: none; }
+                .aframe { display: none; }
+                .doors { width: clamp(170px, 52vw, 260px); }
+            }
+            @media (prefers-reduced-motion: reduce) {
+                .leaf, .scene { transition: none !important; }
+                .neon, .hint { animation: none; }
+            }
+
+            /* ================= INSIDE: the chalkboard menu ================= */
+            #inside { display: none; }
+            body.inside #inside { display: block; animation: fadein 0.6s ease; }
+            @keyframes fadein { from { opacity: 0; } }
+            .board {
+                min-height: 100vh; border: 14px solid var(--wood-1);
+                border-image: linear-gradient(135deg, #7a4e2c, var(--wood-2) 40%, #7a4e2c 70%, var(--wood-2)) 1;
+                background-color: var(--board);
+                background-image:
+                    radial-gradient(ellipse at 15% 20%, rgba(255, 255, 255, 0.05), transparent 40%),
+                    radial-gradient(ellipse at 85% 60%, rgba(255, 255, 255, 0.04), transparent 45%),
+                    radial-gradient(ellipse at 40% 90%, rgba(255, 255, 255, 0.035), transparent 40%),
+                    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
+            }
+            .wrap { max-width: 1000px; margin: 0 auto; padding: 18px 16px 70px; }
+            .topbar { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+            .outside-btn { background: none; border: 2px dashed var(--chalk-faint); color: var(--chalk-dim); padding: 4px 12px; border-radius: 10px; cursor: pointer; }
+            .outside-btn:hover { color: var(--chalk); border-color: var(--chalk-dim); }
+            .open-tag { font-family: Bungee, sans-serif; font-size: 13px; color: #ffd6e4; border: 2px solid #ff3d7f; border-radius: 9px; padding: 1px 8px; text-shadow: 0 0 6px #ff3d7f; box-shadow: 0 0 8px rgba(255, 61, 127, 0.5); }
+            header.menu-head { text-align: center; padding: 18px 0 6px; }
+            .menu-head h1 { font-family: "Fredericka the Great", "Cabin Sketch", cursive; font-weight: 400; margin: 0; font-size: clamp(36px, 7vw, 72px); line-height: 1.05; text-shadow: var(--chalk-glow); }
+            .menu-head .est { font-family: "Cabin Sketch", cursive; color: var(--yellow); letter-spacing: 0.18em; font-size: 15px; }
+            .menu-head p { color: var(--chalk-dim); font-size: 21px; margin: 8px auto 0; max-width: 720px; }
+            .squiggle { height: 14px; margin: 18px auto; max-width: 420px; opacity: 0.55;
+                background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='14'%3E%3Cpath d='M0 7 Q10 0 20 7 T40 7' fill='none' stroke='%23f2f0e6' stroke-width='2'/%3E%3C/svg%3E") repeat-x center; }
+
+            h2.board-h {
+                font-family: "Cabin Sketch", cursive; font-weight: 700; font-size: clamp(26px, 4vw, 34px); margin: 34px 0 4px;
+                color: var(--yellow); text-shadow: 0 0 1px rgba(246, 221, 107, 0.6), 0 0 10px rgba(246, 221, 107, 0.12);
+                display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
+            }
+            h2.board-h small { font-family: "Patrick Hand", cursive; font-weight: 400; font-size: 17px; color: var(--chalk-dim); text-shadow: none; }
+            .note { color: var(--chalk-dim); font-size: 17px; margin: 0 0 12px; }
+
+            .about { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+            .about div { border: 2px solid var(--chalk-faint); border-radius: 14px 10px 16px 9px; padding: 10px 14px; }
+            .about h3 { margin: 0 0 4px; font-family: "Cabin Sketch", cursive; font-size: 22px; color: var(--pink); }
+            .about p { margin: 0; font-size: 17px; }
+
+            .menu-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 4px 34px; }
+            .item { display: block; width: 100%; text-align: left; background: none; border: 2px solid transparent; color: var(--chalk); padding: 6px 10px; border-radius: 18px 12px 20px 10px; cursor: pointer; }
+            .item:hover { border-color: var(--chalk-faint); }
+            .item[aria-pressed="true"] { border-color: var(--yellow); box-shadow: 0 0 10px rgba(246, 221, 107, 0.15); }
+            .item .line { display: flex; align-items: baseline; gap: 6px; font-family: "Cabin Sketch", cursive; font-size: 24px; text-shadow: var(--chalk-glow); }
+            .item .line .dots { flex: 1; border-bottom: 3px dotted var(--chalk-faint); transform: translateY(-6px); }
+            .item .line .price { color: var(--yellow); }
+            .item .desc { font-size: 16px; color: var(--chalk-dim); }
+
+            .order { border: 2px dashed var(--chalk-faint); border-radius: 18px; padding: 14px 16px; }
             textarea, input[type="text"] {
-                width: 100%; font: inherit; color: inherit; background: transparent;
-                border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; resize: vertical;
+                width: 100%; background: transparent; color: var(--chalk); border: none; border-bottom: 2px solid var(--chalk-dim);
+                font: 22px/1.4 "Patrick Hand", cursive; padding: 6px 2px; resize: vertical; text-shadow: var(--chalk-glow);
             }
-            textarea:focus, input[type="text"]:focus { outline: 2px solid var(--awning); border-color: transparent; }
-            .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
-            .scope { font-size: 13px; color: var(--muted); }
-            .scope b { color: var(--ink); }
-            button.primary, button.ghost {
-                font: 600 14px "IBM Plex Sans", sans-serif; border-radius: 8px; padding: 10px 18px; cursor: pointer; border: 1px solid transparent;
-            }
-            button.primary { background: var(--awning); color: #fff; }
-            button.primary:disabled { opacity: 0.45; cursor: progress; }
-            button.ghost { background: transparent; border-color: var(--line); color: var(--ink); }
+            textarea::placeholder, input::placeholder { color: rgba(242, 240, 230, 0.4); }
+            textarea:focus, input:focus { outline: none; border-bottom-color: var(--yellow); }
+            .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 12px; }
             .spacer { flex: 1; }
-            .examples { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
-            .examples button {
-                font: 13px "IBM Plex Sans", sans-serif; text-align: left; color: var(--ink); cursor: pointer;
-                background: var(--chip); border: 1px solid transparent; border-radius: 999px; padding: 6px 12px;
-            }
-            .examples button:hover { border-color: var(--awning); }
+            .scope { color: var(--chalk-dim); font-size: 17px; }
+            .scope b { color: var(--green); font-weight: 400; }
+            .order-btn { font: 20px "Permanent Marker", cursive; color: #1b1b1b; background: #fff35c; border: none; padding: 8px 20px; transform: rotate(-1.5deg); box-shadow: 3px 4px 0 rgba(0, 0, 0, 0.45); cursor: pointer; }
+            .order-btn:hover { transform: rotate(0deg) scale(1.03); }
+            .order-btn:disabled { opacity: 0.5; cursor: progress; transform: none; }
+            .order-btn.ghost { background: #9dff7a; }
+            .specials { margin-top: 16px; }
+            .specials h3 { margin: 0 0 4px; font: 700 22px "Cabin Sketch", cursive; color: var(--pink); }
+            .special { display: flex; width: 100%; gap: 8px; align-items: baseline; text-align: left; background: none; border: none; color: var(--chalk); padding: 3px 4px; cursor: pointer; font-size: 18px; border-radius: 8px; }
+            .special:hover { background: rgba(255, 255, 255, 0.05); }
+            .special .dots { flex: 1; border-bottom: 2px dotted var(--chalk-faint); min-width: 24px; transform: translateY(-5px); }
+            .special .price { color: var(--yellow); white-space: nowrap; }
 
-            .clarify { display: none; margin-top: 14px; border-left: 4px solid var(--accent); background: var(--chip); border-radius: 0 8px 8px 0; padding: 12px 14px; }
+            .clarify { display: none; margin-top: 14px; padding: 12px 14px; border: 2px solid var(--pink); border-radius: 16px 10px 18px 12px; }
             .clarify.show { display: block; }
-            .clarify p { margin: 0 0 8px; }
-
-            .lookup { display: flex; gap: 10px; }
+            .clarify .who { font: 700 18px "Cabin Sketch", cursive; color: var(--pink); }
+            .clarify p { margin: 2px 0 8px; font-size: 20px; }
+            .lookup { display: flex; gap: 12px; align-items: flex-end; }
             .lookup input { flex: 1; }
 
-            .chain { display: flex; flex-wrap: wrap; align-items: stretch; gap: 6px 0; margin: 10px 0 4px; }
-            .chain .stop {
-                min-width: 120px; max-width: 210px; padding: 8px 10px; border-radius: 8px; background: var(--paper);
-                border: 1px solid var(--line); border-left: 6px solid var(--c-other); font-size: 13px; line-height: 1.3;
+            .chain { display: flex; flex-wrap: wrap; align-items: stretch; gap: 10px 0; margin: 10px 0 4px; }
+            .stop { min-width: 120px; max-width: 220px; padding: 6px 10px; border: 2px solid var(--c, var(--chalk-dim)); border-radius: 14px 9px 16px 8px; line-height: 1.2; }
+            .stop.registry { border-style: dashed; }
+            .stop .who { font-size: 18px; text-shadow: var(--chalk-glow); overflow-wrap: anywhere; }
+            .stop .when { font-size: 15px; color: var(--c, var(--chalk-dim)); }
+            .arrow { align-self: center; padding: 0 8px; color: var(--chalk-dim); font-size: 22px; }
+            .tl-card { margin-top: 14px; }
+            .tl-card h3 { margin: 0; font: 700 22px "Cabin Sketch", cursive; text-shadow: var(--chalk-glow); }
+            .tl-card .fine { font-size: 15px; color: var(--chalk-dim); margin: 4px 0 0; }
+            .legend { display: flex; flex-wrap: wrap; gap: 2px 14px; font-size: 15px; color: var(--chalk-dim); margin-top: 4px; }
+            .legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; background: var(--c); }
+
+            #status { font-size: 17px; color: var(--green); }
+            .tickets { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(210px, 1fr); gap: 16px; overflow-x: auto; padding: 14px 4px 10px; }
+            .ticket {
+                position: relative; background: var(--paper); color: var(--ink); padding: 18px 12px 14px; min-height: 120px;
+                font-size: 15px; line-height: 1.35; box-shadow: 3px 5px 0 rgba(0, 0, 0, 0.45); transform: rotate(var(--tilt, 0deg));
             }
-            .chain .stop.registry { border-style: dashed; border-left-style: solid; }
-            .chain .stop .who { font-weight: 600; overflow-wrap: anywhere; }
-            .chain .stop .when { font: 12px "IBM Plex Mono", monospace; color: var(--muted); margin-top: 2px; }
-            .chain .arrow { align-self: center; padding: 0 6px; color: var(--muted); font-size: 18px; }
-            .tl-card { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; margin-top: 12px; }
-            .tl-card h3 { font-size: 17px; }
-            .tl-card .note { font-size: 12px; color: var(--muted); margin: 6px 0 0; }
-            .legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; color: var(--muted); margin-top: 8px; }
-            .legend span::before { content: ""; display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 5px; background: var(--c); }
+            .ticket::before { content: ""; position: absolute; top: 4px; left: 50%; width: 14px; height: 14px; margin-left: -7px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #ff8a8a, #c8202f); box-shadow: 0 2px 2px rgba(0, 0, 0, 0.4); }
+            .ticket::after { content: ""; position: absolute; left: 0; right: 0; bottom: -7px; height: 8px; background: radial-gradient(circle at 7px 0, var(--paper) 6px, transparent 7px) 0 0 / 14px 8px repeat-x; }
+            .ticket h4 { margin: 0 0 6px; font: 14px Bungee, sans-serif; border-bottom: 2px dashed #bdb6a6; padding-bottom: 4px; display: flex; justify-content: space-between; gap: 6px; }
+            .ticket h4 .st { color: #c8202f; font-size: 11px; white-space: nowrap; }
+            .ticket.done h4 .st { color: #2f7a3b; }
+            .ticket ol { margin: 0; padding: 0; list-style: none; }
+            .ticket li.ret { font-weight: 700; }
+            .ticket li.err { color: #c8202f; }
 
-            .run-head { display: flex; align-items: baseline; gap: 12px; }
-            #status { font: 13px "IBM Plex Mono", monospace; color: var(--muted); }
-            .lanes { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(200px, 1fr); gap: 10px; overflow-x: auto; padding-bottom: 6px; }
-            .lane { background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; min-height: 90px; }
-            .lane h4 { margin: 0 0 6px; font: 600 13px "IBM Plex Sans", sans-serif; display: flex; gap: 6px; align-items: center; }
-            .lane h4 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
-            .lane.done h4 .dot { background: var(--awning); }
-            .lane ol { margin: 0; padding: 0; list-style: none; font: 12px/1.55 "IBM Plex Mono", monospace; color: var(--muted); }
-            .lane li.ret { color: var(--ink); }
-            .lane li.err { color: var(--accent); }
-            .empty { color: var(--muted); font-size: 14px; }
-
-            .report { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 22px 26px; box-shadow: var(--shadow); }
-            .report h2 { font-size: 21px; margin: 22px 0 6px; }
-            .report p, .report li { font-size: 16px; }
-            .report table { border-collapse: collapse; width: 100%; font-size: 14px; margin: 12px 0; display: block; overflow-x: auto; }
-            .report th, .report td { border-bottom: 1px solid var(--line); padding: 7px 8px; text-align: left; vertical-align: top; }
-            .report th { font-weight: 600; background: var(--chip); }
-            .report a { color: var(--awning); }
+            .report { font-size: 19px; }
+            .report h1, .report h2 { font: 700 28px "Cabin Sketch", cursive; color: var(--yellow); margin: 26px 0 6px; text-shadow: 0 0 1px rgba(246, 221, 107, 0.5); }
+            .report h3 { font: 700 22px "Cabin Sketch", cursive; color: var(--pink); margin: 18px 0 4px; }
+            .report p, .report li { text-shadow: var(--chalk-glow); }
+            .report strong { color: var(--green); font-weight: 400; }
+            .report a { color: var(--blue); overflow-wrap: anywhere; }
+            .report table { border-collapse: collapse; width: 100%; margin: 12px 0; display: block; overflow-x: auto; font-size: 17px; }
+            .report th, .report td { border-bottom: 2px dashed var(--chalk-faint); padding: 6px 8px; text-align: left; vertical-align: top; }
+            .report th { color: var(--orange); font-weight: 400; border-bottom-style: solid; }
+            .report code { font-family: inherit; color: var(--blue); }
             a.cite {
-                font: 500 11px "IBM Plex Mono", monospace; text-decoration: none; color: var(--awning) !important;
-                background: var(--chip); border-radius: 4px; padding: 1px 4px; margin: 0 1px; white-space: nowrap; vertical-align: 1px;
+                display: inline-block; font: 11px/1.4 Bungee, sans-serif; text-decoration: none; color: #1b1b1b !important;
+                background: #fff35c; padding: 0 5px 0 9px; margin: 0 2px; vertical-align: 2px; text-shadow: none;
+                clip-path: polygon(6px 0, 100% 0, 100% 100%, 6px 100%, 0 50%); transform: rotate(-3deg);
             }
-            a.cite:hover { background: var(--awning); color: #fff !important; }
-            .report-meta { font: 12px "IBM Plex Mono", monospace; color: var(--muted); margin-top: 10px; }
-
-            footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted); }
-            .toggle-ctx { position: fixed; right: 16px; bottom: 16px; z-index: 5; }
+            a.cite:hover { background: #9dff7a; }
+            .meta { color: var(--chalk-dim); font-size: 15px; margin-top: 10px; }
+            footer { margin-top: 48px; padding-top: 14px; border-top: 2px dashed var(--chalk-faint); color: var(--chalk-dim); font-size: 15px; }
+            .toggle-ctx { font: 14px "Permanent Marker", cursive; background: #ff8fc8; color: #1b1b1b; border: none; padding: 4px 10px; box-shadow: 2px 3px 0 rgba(0, 0, 0, 0.45); cursor: pointer; transform: rotate(2deg); }
+            .topbar .right { display: flex; gap: 12px; align-items: center; }
+            body.ctx-hidden { --context-width: 0px; }
+            body.ctx-hidden #context-panel { display: none; }
+            #context-panel { background: #121512 !important; color: var(--chalk); border-left-color: var(--wood-1) !important; }
+            #context-panel .ctx-head { background: #121512 !important; }
 
             @media (max-width: 760px) {
                 .about { grid-template-columns: 1fr; }
-                .report { padding: 16px; }
-                .lookup { flex-direction: column; }
+                .lookup { flex-direction: column; align-items: stretch; }
+                .board { border-width: 8px; }
             }
         </style>
     </head>
     <body class="ctx-hidden">
-        <div class="awning" aria-hidden="true"></div>
-        <main>
-            <header class="hero">
-                <div class="kicker">NYC storefront succession · 5 corridors · 1985–today</div>
-                <h1>What Was Here Before</h1>
-                <p class="tagline">Thinking of opening on an NYC corridor? See what happened to the businesses before you: which long-running shops closed, what took their place, and how that lines up with rent.</p>
-                <div class="about">
-                    <div><h3>What it explores</h3><p>License, storefront-registry and Census records for five commercial corridors, plus local press. It traces closures of businesses that ran 10+ years and what replaced them.</p></div>
-                    <div><h3>Who it's for</h3><p>Small-business owners scouting a location, and residents, Community Board members and reporters watching a block change.</p></div>
-                    <div><h3>How to use it</h3><p>Pick a corridor (optional), ask a question or click an example, and watch the researchers work. Every claim in the report links to its evidence.</p></div>
+        <!-- ================= OUTSIDE ================= -->
+        <div id="street" role="region" aria-label="Storefront entrance">
+            <div class="scene">
+                <div class="upper" aria-hidden="true">
+                    <div class="win"></div><div class="win lit"></div><div class="win"></div><div class="win"></div>
                 </div>
-            </header>
-
-            <section class="block">
-                <h2>Pick a corridor</h2>
-                <p class="sub">Optional. Click again to clear. Numbers come straight from the database: closures of 10+-year businesses since 2014, rent change 2011–15 → 2020–24, and the latest storefront vacancy.</p>
-                <div class="corridors" id="corridors"><div class="empty">Loading corridors…</div></div>
-            </section>
-
-            <section class="block">
-                <h2>Ask a question</h2>
-                <p class="sub">Say where, what kind of business or measure, and (optionally) when. Vague questions get a follow-up question first.</p>
-                <form class="ask" id="ask">
-                    <textarea id="question" rows="2" placeholder="e.g. On Myrtle Ave, what kinds of businesses that ran 10+ years closed since 2015, and what replaced them?"></textarea>
-                    <div class="row">
-                        <span class="scope" id="scope">Scope: <b>all corridors</b></span>
-                        <span class="spacer"></span>
-                        <button class="primary" id="run" type="submit">Research</button>
+                <div>
+                    <div class="sign">
+                        <div class="big">WHAT WAS HERE BEFORE</div>
+                        <div class="small">DELI · GROCERY · BLOCK HISTORY · OPEN 24 HRS</div>
                     </div>
-                    <div class="examples" id="examples"></div>
-                    <div class="clarify" id="clarify">
-                        <p id="clarify-q"></p>
-                        <div class="lookup">
-                            <input type="text" id="clarify-a" placeholder="Your answer" autocomplete="off" />
-                            <button class="primary" type="button" id="clarify-send">Continue</button>
+                    <div class="valance" aria-hidden="true"></div>
+                </div>
+                <div class="front">
+                    <div class="window left" aria-hidden="true">
+                        <div class="neon" style="left: 8%; top: 7%">OPEN</div>
+                        <div class="poster y" style="right: 7%; top: 8%; transform: rotate(3deg)">FRESH DATA<small>delivered daily</small></div>
+                        <div class="burst" style="left: 6%; bottom: 16%; transform: rotate(-8deg)">EVERY<br />CLAIM<br />CITED!</div>
+                        <div class="poster g" style="right: 9%; bottom: 17%; transform: rotate(-4deg)">LICENSES<br />·&nbsp;REGISTRY&nbsp;·<br />CENSUS</div>
+                        <div class="kick"></div>
+                    </div>
+                    <button class="doors" id="doors" type="button" aria-label="Open the doors and go inside">
+                        <div class="transom">PUSH TO ENTER</div>
+                        <div class="doorway" aria-hidden="true"><div class="board-peek">TODAY'S MENU</div></div>
+                        <div class="leaf l" aria-hidden="true"><div class="sticker">PUSH</div><div class="bar"></div><div class="hours">since 1985 · no guessing</div></div>
+                        <div class="leaf r" aria-hidden="true"><div class="sticker">PUSH</div><div class="bar"></div><div class="hours">ask about your block</div></div>
+                    </button>
+                    <div class="window right" aria-hidden="true">
+                        <div class="poster o" style="left: 8%; top: 8%; transform: rotate(-3deg)">ASK ABOUT<br />YOUR BLOCK</div>
+                        <div class="poster p" style="right: 8%; top: 22%; transform: rotate(4deg)">WHO CLOSED?<br />WHO MOVED IN?</div>
+                        <svg class="cat" style="left: 14%; bottom: 13%" viewBox="0 0 100 90">
+                            <path d="M20 88 C10 60 18 38 34 34 L30 12 L42 26 C48 24 54 24 60 26 L72 12 L68 34 C84 40 90 62 82 88 Z" fill="#e58a2e" />
+                            <path d="M30 60 q10 6 20 0 M54 60 q10 6 20 0" stroke="#b5631c" stroke-width="4" fill="none" />
+                            <circle cx="41" cy="44" r="4" fill="#1b1b1b" /><circle cx="61" cy="44" r="4" fill="#1b1b1b" />
+                            <path d="M48 52 l3 3 l3 -3" stroke="#1b1b1b" stroke-width="2" fill="none" />
+                            <path d="M82 80 C98 76 98 58 88 54" stroke="#e58a2e" stroke-width="7" fill="none" stroke-linecap="round" />
+                        </svg>
+                        <div class="poster y" style="right: 10%; bottom: 16%; transform: rotate(-2deg)">BODEGA CAT<small>not for sale</small></div>
+                        <div class="kick"></div>
+                    </div>
+                </div>
+                <div class="sidewalk">
+                    <div class="aframe"><b>Thinking of opening on an NYC corridor?</b>Come in &amp; see what was here before you.</div>
+                    <div class="hint">↑ Tap the doors to come in ↑</div>
+                    <button class="skip" id="skip" type="button">Skip the door</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= INSIDE ================= -->
+        <div id="inside">
+            <div class="board">
+                <div class="wrap">
+                    <div class="topbar">
+                        <button class="outside-btn" id="go-outside" type="button">← step back outside</button>
+                        <span class="right">
+                                                <span class="open-tag">OPEN</span>
+                        </span>
+                    </div>
+                    <header class="menu-head">
+                        <div class="est">NYC STOREFRONT SUCCESSION · EST. 1985</div>
+                        <h1>What Was Here Before</h1>
+                        <p>Thinking of opening on an NYC corridor? See which long-running shops closed, what took their place, and how that lines up with rent.</p>
+                    </header>
+                    <div class="squiggle" aria-hidden="true"></div>
+
+                    <section class="about">
+                        <div><h3>What we serve</h3><p>City &amp; state license records, the storefront vacancy registry, Census rent &amp; income, and local press for 5 corridors. We trace businesses that ran 10+ years: when they closed and what replaced them.</p></div>
+                        <div><h3>Who it's for</h3><p>Small-business owners scouting a spot, plus neighbors, Community Board members and reporters watching a block change.</p></div>
+                        <div><h3>How to order</h3><p>Pick a corridor (optional), ask a question or grab a special, and watch the researchers cook. Every claim comes with a price tag: its evidence.</p></div>
+                    </section>
+
+                    <h2 class="board-h">Pick your corridor <small>optional · tap again to clear · price = 10+-yr closures since 2014</small></h2>
+                    <div class="menu-list" id="corridors"><p class="note">Writing the menu…</p></div>
+
+                    <h2 class="board-h">Place your order</h2>
+                    <form class="order" id="ask">
+                        <textarea id="question" rows="2" placeholder="e.g. On Myrtle Ave, what businesses that ran 10+ years closed since 2015, and what replaced them?"></textarea>
+                        <div class="row">
+                            <span class="scope" id="scope">Corridor: <b>all of them</b></span>
+                            <span class="spacer"></span>
+                            <button class="order-btn" id="run" type="submit">Order up →</button>
                         </div>
-                    </div>
-                </form>
-            </section>
+                        <div class="clarify" id="clarify">
+                            <div class="who">The guy at the counter asks:</div>
+                            <p id="clarify-q"></p>
+                            <div class="lookup">
+                                <input type="text" id="clarify-a" placeholder="Your answer" autocomplete="off" />
+                                <button class="order-btn ghost" type="button" id="clarify-send">Go on →</button>
+                            </div>
+                        </div>
+                        <div class="specials">
+                            <h3>Today's specials</h3>
+                            <div id="examples"></div>
+                        </div>
+                    </form>
 
-            <section class="block">
-                <h2>What was here before?</h2>
-                <p class="sub">Look up one storefront instantly (no AI): every licensed business and registry record at that address, in order.</p>
-                <form class="lookup" id="lookup">
-                    <input type="text" id="address" placeholder="e.g. 2170 Frederick Douglass Blvd, 1372 Nostrand Ave, 76-01 Roosevelt Ave" autocomplete="off" />
-                    <button class="ghost" type="submit">Look up</button>
-                </form>
-                <div id="lookup-out"></div>
-            </section>
+                    <h2 class="board-h">What was here before? <small>one address, instant, no AI</small></h2>
+                    <form class="lookup" id="lookup">
+                        <input type="text" id="address" placeholder="e.g. 2170 Frederick Douglass Blvd · 1372 Nostrand Ave · 76-01 Roosevelt Ave" autocomplete="off" />
+                        <button class="order-btn ghost" type="submit">Look it up</button>
+                    </form>
+                    <div id="lookup-out"></div>
 
-            <section class="block" id="run-block" hidden>
-                <div class="run-head"><h2>Researchers at work</h2><span id="status"></span></div>
-                <p class="sub">The Lead splits your question; researchers run in parallel, one column each; the Writer turns their findings into a cited report.</p>
-                <div class="lanes" id="lanes"></div>
-            </section>
+                    <section id="run-block" hidden>
+                        <h2 class="board-h">In the kitchen <small id="status"></small></h2>
+                        <p class="note">The Lead splits your order; researchers work in parallel, one ticket each; the Writer plates the cited report.</p>
+                        <div class="tickets" id="lanes"></div>
+                    </section>
 
-            <section class="block" id="report-block" hidden>
-                <h2>Report</h2>
-                <p class="sub">Hover a citation like <a class="cite">E3</a> to see where it came from; citations with a web source open it.</p>
-                <article class="report" id="report"></article>
-                <div class="report-meta" id="report-meta"></div>
-                <div id="report-timelines"></div>
-            </section>
+                    <section id="report-block" hidden>
+                        <h2 class="board-h">Your order <small>hover a price tag like <a class="cite">E3</a> for its source</small></h2>
+                        <article class="report" id="report"></article>
+                        <div class="meta" id="report-meta"></div>
+                        <div id="report-timelines"></div>
+                    </section>
 
-            <footer>
-                Data: NYC DCWP business licenses (current + 2013 legacy export), NYS Retail Food Stores, NYS Liquor Authority licenses,
-                NYC Storefront Registry (2019+), U.S. Census ACS 5-year, and live Google Search for press. Licensed businesses only; the
-                report says what the data can't answer. Describes historical patterns; not financial or legal advice.
-            </footer>
-        </main>
-        <button class="ghost toggle-ctx" id="toggle-ctx" type="button">Show agent contexts</button>
+                    <footer>
+                        Ingredients: NYC DCWP business licenses (current + 2013 legacy export), NYS Retail Food Stores, NYS Liquor Authority,
+                        NYC Storefront Registry (2019+), U.S. Census ACS 5-year, and live Google Search for press. Licensed businesses only;
+                        every report says what the data can't answer. Historical patterns, not financial or legal advice.
+                    </footer>
+                </div>
+            </div>
+        </div>
 
         <script src="/context-panel.js"></script>
         <script>
             const $ = (id) => document.getElementById(id);
-            let source = null, runId = null, corridor = "", corridorNames = {}, earlier = "", lastQuestion = "", started = 0, ticker = null;
+            let source = null, runId = null, corridor = "", corridorNames = {}, earlier = "", started = 0, ticker = null;
             let evidence = {};
+            const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+            // ---------- Door ----------
+            function enter(animate) {
+                try { sessionStorage.setItem("entered", "1"); } catch {}
+                if (!animate || reduceMotion) { document.body.classList.add("inside"); window.scrollTo(0, 0); return; }
+                document.body.classList.add("entering");
+                setTimeout(() => {
+                    document.body.classList.add("inside");
+                    document.body.classList.remove("entering");
+                    window.scrollTo(0, 0);
+                    $("question").focus({ preventScroll: true });
+                }, 2000);
+            }
+            $("doors").onclick = () => enter(true);
+            $("skip").onclick = () => enter(false);
+            $("go-outside").onclick = () => {
+                try { sessionStorage.removeItem("entered"); } catch {}
+                document.body.classList.remove("inside", "entering");
+                $("doors").focus();
+            };
+            const urlParams = new URLSearchParams(location.search);
+            let entered = false;
+            try { entered = sessionStorage.getItem("entered") === "1"; } catch {}
+            if (urlParams.get("q") || entered) enter(false);
+
+            // ---------- Menu ----------
             const EXAMPLES = [
-                ["Myrtle Ave closures", "On Myrtle Ave, what kinds of businesses that ran 10+ years closed since 2015, and what replaced them?"],
-                ["Laundromats & delis", "Which pilot corridors lost the most laundromats and delis between 2005 and 2013?"],
+                ["Myrtle Ave closures & replacements", "On Myrtle Ave, what kinds of businesses that ran 10+ years closed since 2015, and what replaced them?"],
+                ["Laundromats & delis, by corridor", "Which pilot corridors lost the most laundromats and delis between 2013 and today?"],
                 ["Rent vs. turnover", "Do corridors with the biggest rent increases have higher turnover of long-running businesses?"],
-                ["Why did it close?", "Why did long-running pharmacies on Frederick Douglass Blvd close since 2015, and what replaced them?"],
-                ["Vacancy", "How has storefront vacancy changed on Nostrand Ave and 5th Ave since 2019?"],
-                ["Vague (asks back)", "Is Nostrand Ave gentrifying?"],
+                ["Why did the pharmacies close?", "Why did long-running pharmacies on Frederick Douglass Blvd close since 2015, and what replaced them?"],
+                ["Vacancy since 2019", "How has storefront vacancy changed on Nostrand Ave and 5th Ave since 2019?"],
+                ["Something vague (we'll ask back)", "Is Nostrand Ave gentrifying?"],
             ];
-
             const CAT = {
-                bodega_deli: ["Bodega / deli", "--c-bodega"], laundromat_drycleaner: ["Laundromat", "--c-laundry"],
-                restaurant: ["Restaurant", "--c-food"], food_service: ["Food service", "--c-food"], cafe_coffee_bakery: ["Café / bakery", "--c-cafe"],
-                bar: ["Bar", "--c-bar"], liquor_store: ["Liquor", "--c-bar"], chain: ["Chain", "--c-chain"],
-                phone_electronics: ["Phone / electronics", "--c-phone"], grocery_supermarket: ["Grocery", "--c-bodega"],
-                pharmacy: ["Pharmacy", "--c-services"], retail: ["Retail", "--c-retail"], secondhand_pawn: ["Secondhand / pawn", "--c-retail"],
-                smoke_vape_shop: ["Smoke shop", "--c-retail"], services: ["Services", "--c-services"], auto_parking: ["Auto", "--c-services"],
-                salon_barber: ["Salon / barber", "--c-cafe"], vacant: ["Vacant", "--c-vacant"], other: ["Other", "--c-other"],
+                bodega_deli: ["Bodega / deli", "--orange"], laundromat_drycleaner: ["Laundromat", "--blue"],
+                restaurant: ["Restaurant", "--pink"], food_service: ["Food service", "--pink"], cafe_coffee_bakery: ["Café / bakery", "--pink"],
+                bar: ["Bar", "--violet"], liquor_store: ["Liquor", "--violet"], chain: ["Chain", "--chalk"],
+                phone_electronics: ["Phone / electronics", "--green"], grocery_supermarket: ["Grocery", "--orange"],
+                pharmacy: ["Pharmacy", "--blue"], retail: ["Retail", "--yellow"], secondhand_pawn: ["Secondhand / pawn", "--yellow"],
+                smoke_vape_shop: ["Smoke shop", "--yellow"], services: ["Services", "--chalk-dim"], auto_parking: ["Auto", "--chalk-dim"],
+                salon_barber: ["Salon / barber", "--pink"], vacant: ["Vacant", "--chalk-faint"], other: ["Other", "--chalk-dim"],
             };
             const catColor = (c) => `var(${(CAT[c] || CAT.other)[1]})`;
             const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch]);
             const titleCase = (s) => String(s).toLowerCase().replace(/\b([a-z])/g, (m) => m.toUpperCase()).replace(/\b(Llc|Inc|Corp|Nyc|Ny)\b/g, (m) => m.toUpperCase());
 
-            // --- Corridors ---
             fetch("/corridors").then((r) => r.json()).then((rows) => {
                 $("corridors").replaceChildren(...rows.map((c) => {
                     corridorNames[c.key] = `${c.name} (${c.neighborhood})`;
                     const b = document.createElement("button");
-                    b.type = "button"; b.className = "corridor"; b.setAttribute("aria-pressed", "false");
+                    b.type = "button"; b.className = "item"; b.setAttribute("aria-pressed", "false");
                     const pct = (v) => (v == null ? "–" : (v * 100).toFixed(1) + "%");
-                    b.innerHTML = `<div class="name">${esc(c.name)}</div><div class="hood">${esc(c.neighborhood)}</div>
-                        <dl><dt>10+yr closures</dt><dd>${c.long_running_closures ?? "–"}</dd>
-                        <dt>rent</dt><dd>+${c.rent_pct_change ?? "–"}%</dd>
-                        <dt>vacant ${c.vacancy_year ?? ""}</dt><dd>${pct(c.vacancy_rate)}</dd></dl>`;
+                    b.innerHTML = `<div class="line"><span>${esc(c.name)}</span><span class="dots"></span><span class="price">${c.long_running_closures ?? "–"}</span></div>
+                        <div class="desc">${esc(c.neighborhood)} · rent +${c.rent_pct_change ?? "–"}% · ${pct(c.vacancy_rate)} vacant (${c.vacancy_year ?? ""})</div>`;
                     b.onclick = () => {
                         corridor = corridor === c.key ? "" : c.key;
-                        document.querySelectorAll(".corridor").forEach((x) => x.setAttribute("aria-pressed", String(x === b && corridor !== "")));
-                        $("scope").innerHTML = "Scope: <b>" + esc(corridor ? corridorNames[corridor] : "all corridors") + "</b>";
+                        document.querySelectorAll("#corridors .item").forEach((x) => x.setAttribute("aria-pressed", String(x === b && corridor !== "")));
+                        $("scope").innerHTML = "Corridor: <b>" + esc(corridor ? corridorNames[corridor] : "all of them") + "</b>";
                     };
                     return b;
                 }));
-            }).catch(() => { $("corridors").innerHTML = '<div class="empty">Could not load corridors.</div>'; });
+            }).catch(() => { $("corridors").innerHTML = '<p class="note">Could not load the menu.</p>'; });
 
-            // --- Examples ---
             $("examples").replaceChildren(...EXAMPLES.map(([label, q]) => {
                 const b = document.createElement("button");
-                b.type = "button"; b.textContent = label; b.title = q;
+                b.type = "button"; b.className = "special"; b.title = q;
+                b.innerHTML = `<span>${esc(label)}</span><span class="dots"></span><span class="price">${label.startsWith("Something") ? "5 sec" : "~2 min"}</span>`;
                 b.onclick = () => { $("question").value = q; earlier = ""; $("question").focus(); };
                 return b;
             }));
 
-            // --- Timeline chain ---
-            function chain(rows, address, note) {
+            // ---------- Timeline chain ----------
+            function chain(rows, address, fine) {
                 const card = document.createElement("div");
                 card.className = "tl-card";
                 const stops = rows.map((r) => {
                     const yrs = r.start_year ? (r.end_year ? (r.start_year === r.end_year ? `${r.start_year}` : `${r.start_year}–${r.end_year}`)
                         : r.status === "unknown" ? `${r.start_year}–? (last seen 2013)` : `${r.start_year}–now`) : r.status === "open" ? "open now" : "";
                     const who = r.kind === "registry" ? r.occupant.replace(/^Registry: /, "") : titleCase(r.occupant);
-                    return `<div class="stop ${r.kind === "registry" ? "registry" : ""}" style="border-left-color:${catColor(r.category)}" title="${esc((CAT[r.category] || CAT.other)[0])} · ${esc((r.sources || []).join(", "))}">
+                    return `<div class="stop ${r.kind === "registry" ? "registry" : ""}" style="--c:${catColor(r.category)}" title="${esc((CAT[r.category] || CAT.other)[0])} · ${esc((r.sources || []).join(", "))}">
                         <div class="who">${esc(who)}</div><div class="when">${esc(yrs)}${r.kind === "registry" ? " · registry" : ""}${r.start_reliable === false ? " · start approx." : ""}</div></div>`;
                 });
-                card.innerHTML = `<h3>${esc(address)}</h3><div class="chain">${stops.join('<span class="arrow">→</span>')}</div>
-                    ${note ? `<p class="note">${esc(note)}</p>` : ""}`;
+                card.innerHTML = `<h3>${esc(address)}</h3><div class="chain">${stops.join('<span class="arrow">→</span>')}</div>${fine ? `<p class="fine">${esc(fine)}</p>` : ""}`;
                 const cats = [...new Set(rows.map((r) => r.category))];
                 card.insertAdjacentHTML("beforeend", `<div class="legend">${cats.map((c) => `<span style="--c:${catColor(c)}">${esc((CAT[c] || CAT.other)[0])}</span>`).join("")}</div>`);
                 return card;
             }
-
             $("lookup").addEventListener("submit", async (e) => {
                 e.preventDefault();
                 const address = $("address").value.trim();
                 if (!address) return;
-                $("lookup-out").innerHTML = '<p class="empty">Looking up…</p>';
+                $("lookup-out").innerHTML = '<p class="note">Checking the records…</p>';
                 try {
                     const r = await (await fetch("/timeline?" + new URLSearchParams({ address }))).json();
-                    $("lookup-out").replaceChildren(r.rows.length ? chain(r.rows, r.rows[0].address, "Solid = licensed business; dashed = storefront registry (2019+). Shops sharing a house number share a timeline.")
-                        : Object.assign(document.createElement("p"), { className: "empty", textContent: r.note }));
-                } catch { $("lookup-out").innerHTML = '<p class="empty">Lookup failed.</p>'; }
+                    $("lookup-out").replaceChildren(r.rows.length
+                        ? chain(r.rows, r.rows[0].address, "Solid = licensed business · dashed = storefront registry (2019+) · shops sharing a house number share a timeline.")
+                        : Object.assign(document.createElement("p"), { className: "note", textContent: r.note }));
+                } catch { $("lookup-out").innerHTML = '<p class="note">Lookup failed.</p>'; }
             });
 
-            // --- Research run ---
-            function lane(agent) {
-                const id = "lane-" + agent.replace(/\W+/g, "-");
+            // ---------- Kitchen tickets ----------
+            let ticketCount = 0;
+            function ticket(agent) {
+                const id = "t-" + agent.replace(/\W+/g, "-");
                 let el = document.getElementById(id);
                 if (!el) {
                     el = document.createElement("div");
-                    el.className = "lane"; el.id = id;
-                    el.innerHTML = `<h4><span class="dot"></span>${esc(agent)}</h4><ol></ol>`;
+                    el.className = "ticket"; el.id = id;
+                    el.style.setProperty("--tilt", `${((ticketCount++ * 7) % 5) - 2}deg`);
+                    el.innerHTML = `<h4><span>${esc(agent)}</span><span class="st">cooking</span></h4><ol></ol>`;
                     $("lanes").appendChild(el);
                 }
                 return el;
             }
             function addActivity(agent, text) {
-                const el = lane(agent || "System");
+                const el = ticket(agent || "Counter");
                 const li = document.createElement("li");
                 if (/returned/.test(text)) li.className = "ret";
                 if (/stopped|failed/.test(text)) li.className = "err";
-                li.textContent = text.length > 160 ? text.slice(0, 160) + "…" : text;
+                li.textContent = text.length > 150 ? text.slice(0, 150) + "…" : text;
                 el.querySelector("ol").appendChild(li);
-                if (text.startsWith("finished")) el.classList.add("done");
+                if (text.startsWith("finished")) { el.classList.add("done"); el.querySelector(".st").textContent = "ready ✓"; }
             }
             function setRunning(on) {
                 $("run").disabled = on; $("clarify-send").disabled = on;
                 clearInterval(ticker);
-                if (on) { started = Date.now(); ticker = setInterval(() => { $("status").textContent = `running · ${Math.round((Date.now() - started) / 1000)}s`; }, 1000); }
+                if (on) { started = Date.now(); ticker = setInterval(() => { $("status").textContent = `cooking · ${Math.round((Date.now() - started) / 1000)}s`; }, 1000); }
             }
 
+            // ---------- Report ----------
             function renderReport(markdown, ev, toolCalls) {
                 evidence = Object.fromEntries((ev || []).map((e) => [e.evidence_id, e]));
-                // Render markdown first, then turn [E3, E5] in the sanitized HTML into chips, so a chip's tooltip
-                // (which can contain "|") never breaks a markdown table.
+                // Render markdown first, then turn [E3, E5] into price tags, so a tag's tooltip (which can contain "|")
+                // never breaks a markdown table.
                 const safe = DOMPurify.sanitize(marked.parse(markdown));
-                const withCites = safe.replace(/\[(E\d+(?:\s*,\s*E\d+)*)\]/g, (_, ids) => ids.split(/\s*,\s*/).map((id) => {
+                $("report").innerHTML = safe.replace(/\[(E\d+(?:\s*,\s*E\d+)*)\]/g, (_, ids) => ids.split(/\s*,\s*/).map((id) => {
                     const e = evidence[id];
                     const title = e ? `${e.tool}(${Object.entries(e.params || {}).filter(([, v]) => v !== null && v !== "").map(([k, v]) => `${k}=${v}`).join(", ")}) · ${e.url || e.source || ""}` : "not in evidence";
                     const href = e && e.url ? e.url.split(" ; ")[0] : "#";
                     return `<a class="cite" href="${esc(href)}" ${href !== "#" ? 'target="_blank" rel="noopener"' : ""} title="${esc(title)}">${id}</a>`;
                 }).join(""));
-                $("report").innerHTML = withCites;
                 $("report").querySelectorAll('a[href^="http"]').forEach((a) => { a.target = "_blank"; a.rel = "noopener"; });
                 $("report-block").hidden = false;
                 const agents = new Set((toolCalls || []).map((c) => c.agent));
-                $("report-meta").textContent = `${(toolCalls || []).length} tool calls · ${agents.size} agent types · ${Object.keys(evidence).length} evidence items · ${Math.round((Date.now() - started) / 1000)}s`;
-
-                // Storefront timelines the researchers looked up, as chains
-                const seen = new Set();
-                const cards = [];
+                $("report-meta").textContent = `${(toolCalls || []).length} tool calls · ${agents.size} agent types · ${Object.keys(evidence).length} pieces of evidence · ${Math.round((Date.now() - started) / 1000)}s`;
+                const seen = new Set(), cards = [];
                 for (const c of toolCalls || []) {
                     if (c.name !== "storefront_timeline") continue;
                     try {
@@ -408,20 +614,21 @@
                         cards.push(chain(r.rows, `${r.rows[0].address} [${r.evidence_id}]`));
                     } catch {}
                 }
-                $("report-timelines").replaceChildren(...(cards.length ? [Object.assign(document.createElement("h3"), { textContent: "Storefronts in this report", style: "margin-top:22px;font-size:18px" }), ...cards] : []));
+                $("report-timelines").replaceChildren(...(cards.length
+                    ? [Object.assign(document.createElement("h2"), { className: "board-h", textContent: "Storefronts on your order" }), ...cards] : []));
             }
 
+            // ---------- Run ----------
             function start(question, context) {
                 if (source) source.close();
-                lastQuestion = question;
                 $("clarify").classList.remove("show");
-                $("lanes").replaceChildren();
+                $("lanes").replaceChildren(); ticketCount = 0;
                 $("run-block").hidden = false;
                 $("report-block").hidden = true;
                 resetContext();
                 setRunning(true);
-                const params = new URLSearchParams({ question, corridor, earlier: context || "" });
-                source = new EventSource("/run?" + params);
+                $("run-block").scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+                source = new EventSource("/run?" + new URLSearchParams({ question, corridor, earlier: context || "" }));
                 source.onmessage = (msg) => {
                     const event = JSON.parse(msg.data);
                     if (event.type === "start") runId = event.run_id;
@@ -430,49 +637,44 @@
                     else if (event.type === "done") {
                         setRunning(false); source.close();
                         if (event.clarify) {
-                            $("status").textContent = "needs a detail";
+                            $("status").textContent = "needs one detail";
                             earlier = `User: ${question}\nAssistant: ${event.markdown}`;
                             $("clarify-q").textContent = event.markdown;
                             $("clarify").classList.add("show");
                             $("clarify-a").value = ""; $("clarify-a").focus();
+                            $("ask").scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
                         } else {
-                            $("status").textContent = "done";
+                            $("status").textContent = "order up!";
                             earlier = "";
                             renderReport(event.markdown, event.evidence, event.tool_calls);
-                            $("report-block").scrollIntoView({ behavior: "smooth", block: "start" });
+                            $("report-block").scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
                         }
                     } else if (event.type === "error") {
                         setRunning(false); source.close();
-                        addActivity("System", "failed: " + event.message);
-                        $("status").textContent = "failed";
+                        addActivity("Counter", "failed: " + event.message);
+                        $("status").textContent = "kitchen error";
                     }
                 };
-                source.onerror = () => { setRunning(false); source.close(); addActivity("System", "failed: lost the connection to the server."); $("status").textContent = "failed"; };
+                source.onerror = () => { setRunning(false); source.close(); addActivity("Counter", "failed: lost the connection to the server."); $("status").textContent = "kitchen error"; };
             }
-
+            const syncUrl = (q) => { try { history.replaceState(null, "", "?" + new URLSearchParams({ q, ...(corridor ? { corridor } : {}) })); } catch {} };
             $("ask").addEventListener("submit", (e) => {
                 e.preventDefault();
                 const q = $("question").value.trim();
                 if (q) { syncUrl(q); start(q, ""); }
             });
-            const sendClarify = () => {
-                const a = $("clarify-a").value.trim();
-                if (a) start(a, earlier);
-            };
+            const sendClarify = () => { const a = $("clarify-a").value.trim(); if (a) start(a, earlier); };
             $("clarify-send").onclick = sendClarify;
             $("clarify-a").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); sendClarify(); } });
             $("question").addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("ask").requestSubmit(); } });
-
-            // Shareable links: /?q=question&corridor=myrtle_ave fills the form and starts the run.
-            const urlParams = new URLSearchParams(location.search);
-            if (urlParams.get("corridor")) corridor = urlParams.get("corridor");
-            if (urlParams.get("q")) { $("question").value = urlParams.get("q"); start(urlParams.get("q"), ""); }
-            const syncUrl = (q) => { try { history.replaceState(null, "", "?" + new URLSearchParams({ q, ...(corridor ? { corridor } : {}) })); } catch {} };
-
             $("toggle-ctx").onclick = () => {
                 const hidden = document.body.classList.toggle("ctx-hidden");
                 $("toggle-ctx").textContent = hidden ? "Show agent contexts" : "Hide agent contexts";
             };
+
+            // Shareable links: /?q=question&corridor=myrtle_ave skips the door and starts the run.
+            if (urlParams.get("corridor")) corridor = urlParams.get("corridor");
+            if (urlParams.get("q")) { $("question").value = urlParams.get("q"); start(urlParams.get("q"), ""); }
         </script>
     </body>
 </html>
