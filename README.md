@@ -6,7 +6,7 @@ A deep-research agent (Project 2, Deep Research path) that traces how long-runni
 
 **Who it's for:** small-business owners scouting a location, plus residents, Community Board members and local reporters watching a block change.
 
-> Status: data validation is done (see [`data/VALIDATION.md`](data/VALIDATION.md)). The agent, front end and deploy are in progress. The app code is still the course `wikipedia-deep-research` starter.
+> Status: data validation ([`data/VALIDATION.md`](data/VALIDATION.md)) and the offline database build ([`data/BUILD_REPORT.md`](data/BUILD_REPORT.md)) are done. The agent, front end and deploy are in progress. The app code is still the course `wikipedia-deep-research` starter.
 
 ## Pilot corridors
 
@@ -54,19 +54,48 @@ ACS requires a free Census API key ([sign up here](https://api.census.gov/data/k
 
 The data was last downloaded on 2026-11-04.
 
+### Building the database
+
+The agent doesn't query the open-data APIs live. An offline step, [`build_data.py`](build_data.py), turns the cached pulls into `data/storefronts.duckdb` (about 3 MB, committed to the repo):
+
+```bash
+uv run build_data.py            # uses data/raw/ (fetches anything missing)
+uv run build_data.py --refresh  # re-download all sources first
+```
+
+The build:
+1. Gives every record an **address key** (`corridor|house number`) so the same storefront matches across sources. For example, Queens `7601`, `76 01` and `76-01` all become `76-01`.
+2. Sorts every record into one of about 18 categories using [`data/categories.yaml`](data/categories.yaml). It checks the business name first, then the source's own label (tobacco license → bodega/deli, `LAUNDRY` → laundromat, and so on).
+3. Merges records at the same address that name the same business into **one business**. For example, a deli's tobacco license and its beer license become one business, and a laundromat's 1995 license joins its 2014 renewal.
+4. Finds each closed business's **replacement**: the next business at that address, or "vacant" according to the storefront registry.
+
+| Table | One row per |
+|---|---|
+| `records` | source record (normalized), for citations |
+| `businesses` | merged business: name, category, address, start/end, status, sources |
+| `closures` | closed business: years open, `long_running`, what replaced it and how we know |
+| `storefront_timeline` | occupant of an address, in order: businesses plus registry spells ("Vacant 2021–2022") |
+| `registry`, `vacancy` | registry filing; corridor × year vacancy rate |
+| `acs` | corridor × ZCTA: early vs. latest rent, income, population |
+
+Match rates (from the last build): 99.7–100% of on-corridor records in every source got an address key. 4,639 license records merged into 2,895 businesses, with 172 long-running closures across the five corridors. Of the registry's storefront addresses, 48% also appear in a license dataset; the rest are storefront types the license datasets don't cover. Full numbers are in [`data/BUILD_REPORT.md`](data/BUILD_REPORT.md).
+
 ### What the data can't tell us
 
 - **Not every business is licensed by the city or state.** DCWP licenses only certain industries. Barbershops, salons and most general retail aren't in any license dataset. Bodegas show up through tobacco, food-store and beer licenses.
 - **The NYS food store data has no history.** It lists only stores licensed today.
 - **SLA issue dates show the current license, not when the business opened.** Active licenses on these corridors show "original issue" dates from 2023–2026, and inactive ones go back only to about 2012. SLA data can show that a bar or restaurant closed, but not how long it had been open.
 - **Vacancy data starts in the 2019/20 reporting year.** Before that, vacancy can only be inferred from licenses lapsing. The registry also describes each storefront by a broad activity ("RETAIL", "FOOD SERVICES"), not by its business name.
+- **The legacy DCWP export stops in October 2013.** If a business's last record is a legacy license that was still current then (most laundromats, since the current system no longer lists laundries), its status is **unknown**, not closed.
+- **Address keys merge everything at one house number.** Two shops in the same building can look like one storefront.
 - **COVID-era license extensions** aren't reflected in expiration dates.
 - **Rent and demographics are correlation only.** ZCTA-level ACS numbers can't show what caused a particular closure.
 
 ## Definitions
 
 - **Long-running business:** active at least 10 years.
-- **Closed:** license inactive, or expired and not renewed within 12 months; or the business is gone from the next registry year.
+- **Closed:** every license for the business is inactive. A business whose license expired less than 12 months ago is **lapsed**, not closed, because it may still renew. Expiration dates later than the build date are capped at the build date.
+- **Unknown:** the business was last seen as current in the 2013 legacy export.
 - **Replacement:** the next business at the same address, or "vacant" if there is none within 12 months.
 - **Turnover rate:** closures ÷ storefronts per year.
 

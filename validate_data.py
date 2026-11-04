@@ -39,7 +39,7 @@ SOURCES = {
         "zip": "address_zip", "street": "address_street_name", "building": "address_building",
         "name": ["dba_trade_name", "business_name"], "category": "business_category",
         "status": "license_status", "start": "license_creation_date", "end": "lic_expir_dd",
-        "active_statuses": {"ACTIVE", "READY FOR RENEWAL"},
+        "active_statuses": {"ACTIVE", "READY FOR RENEWAL", "SUSPENDED"},  # suspended is temporary, not a closure
     },
     "dcwp_historical": {
         "label": "NYC DCWP Historical Licenses (legacy system)",

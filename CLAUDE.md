@@ -11,6 +11,7 @@ The repo currently holds the unmodified course starter `wikipedia-deep-research`
 - Setup: create `.env` next to `app.py` (no `.env.example` was committed; the starter needs `WIKIMEDIA_USERNAME`/`WIKIMEDIA_PASSWORD`; this goes away once `wikipedia.py` is replaced), then `gcloud auth application-default login` for Vertex AI.
 - Run locally: `uv run app.py`, then open http://localhost:8000.
 - Data coverage check: `uv run validate_data.py` (`--refresh` to re-download). It caches raw Socrata pulls in `data/raw/<source>__<corridor>.json` and writes `data/VALIDATION.md`. Source field mappings live in its `SOURCES` dict; reuse them in `build_data.py`. ACS needs `CENSUS_API_KEY` in `.env` (the Census API now rejects keyless calls with a 302).
+- Build the database: `uv run build_data.py` (`--refresh` re-downloads first). It writes `data/storefronts.duckdb` (committed, ~3 MB) and `data/BUILD_REPORT.md` (match rates, per-corridor counts). Inspect it with `uv run python -c "import duckdb; print(duckdb.connect('data/storefronts.duckdb', read_only=True).sql('...'))"`.
 - Add a dependency: `uv add <pkg>` (keeps `uv.lock`, which must be committed, in sync).
 - No tests or linter are configured yet.
 
@@ -70,6 +71,15 @@ It is built by extending the starter (same stack, same flat layout, same Lead â†
 - SLA "original issue" dates are only about the current license cycle, so they can't show how long a business has been open.
 - Single license records undercount long-running businesses because they get reissued. `build_data.py` should chain records by address key plus name.
 - Street spellings vary widely (e.g. "FREDRICK DOUGLASS BL", "*8 Avenue"). `data/corridors.yaml` has `like_terms` (a server-side prefilter) and `street_patterns` (regexes that decide). Recheck the street-match % in VALIDATION.md after editing either.
+
+## Build design (`build_data.py`)
+
+- `address_key = "<corridor>|<house number>"`. The street is implied, because every row was already matched to one corridor street. Queens numbers are normalized to `NN-NN`. Registry rows take their number from `property_street_address_or` (the storefront), not from `property_number` (the building).
+- Merging: within one address_key, records are union-found into a business when their names are equal, one contains the other, or they share â‰¥50% of their distinctive words (generic words such as DELI/CORP/LLC are ignored).
+- Status: `open` (any record active), `closed`, `lapsed` (expired < 12 months ago with no definite-close status), or `unknown` (only legacy records still current at the Oct 2013 export). Only `closed` businesses go in `closures`.
+- `start_reliable` is true only when the start date comes from DCWP. SLA dates restart with each license.
+- Replacement: `replacement_basis` is `license` (the next business started within 12 months), `registry` (vacant or a registry activity), `license_after_gap`, or `none`.
+- The registry label "X and Y" maps to year X. `vacancy.partial_year` flags the year still being filed.
 
 ## Domain rules the agents must follow
 

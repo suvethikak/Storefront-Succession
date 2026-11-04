@@ -1,0 +1,99 @@
+# Business categories. build_data.py assigns each record the FIRST category whose rules match:
+#   1. name_patterns: regexes on the uppercased business name (dba and legal name)
+#   2. source_categories: exact raw category labels from a source (DCWP, SLA, NYS food, registry)
+# Order matters: chain is checked first so a Dunkin' with a tobacco license is still a chain.
+# When one business has several records (e.g. a tobacco license and a beer license), the merged
+# business takes the category that appears earliest in this list among its records.
+
+categories:
+  - key: chain
+    label: Chain
+    name_patterns:
+      - '\b(DUNKIN|STARBUCKS|MCDONALD|BURGER KING|WENDY|POPEYES|KFC|KENTUCKY FRIED|CHECKERS|SUBWAY SANDWICH|DOMINO|PAPA JOHN|PIZZA HUT|LITTLE CAESAR|CHIPOTLE|SWEETGREEN|CAVA|SHAKE SHACK|PANERA|CRUMBL|JOE & THE JUICE|BLUESTONE LANE|PRET A MANGER|WINGSTOP|TACO BELL|CHICK-?FIL-?A|FIVE GUYS|JAMBA)\b'
+      - '\b(CVS|DUANE READE|WALGREENS|RITE AID|7-?ELEVEN|DOLLAR TREE|FAMILY DOLLAR|DOLLAR GENERAL|GAMESTOP|FOOT LOCKER|FOOTLOCKER|CHAMPS SPORTS|RAINBOW SHOPS|PLANET FITNESS|BLINK FITNESS|CRUNCH FITNESS|T-?MOBILE|METRO ?PCS|METRO BY T|BOOST MOBILE|CRICKET WIRELESS|VERIZON|AT&T|SPRINT|H&R BLOCK|JACKSON HEWITT|CHASE|CITIBANK|TD BANK|BANK OF AMERICA|SANTANDER|CAPITAL ONE|APPLEBEE|IHOP|TRADER JOE|WHOLE FOODS|ALDI|LIDL|TARGET|ULTA|SALLY BEAUTY|GNC|VITAMIN SHOPPE|MATTRESS FIRM|PETCO|PETSMART|ADVANCE AUTO|AUTOZONE)\b'
+
+  - key: laundromat_drycleaner
+    label: Laundromat / dry cleaner
+    name_patterns: ['LAUNDR', 'LAUNDROMAT', '\bCLEANERS?\b', 'WASH ?(&|AND|N) ?FOLD', '\bWASH(ATERIA|LAND)\b', '\bDRY ?CLEAN']
+    source_categories: ['LAUNDRY', 'LAUNDRY JOBBER', 'LAUNDRIES', 'INDUSTRIAL LAUNDRY', 'INDUSTRIAL LAUNDRY DELIVERY']
+
+  - key: pharmacy
+    label: Pharmacy
+    name_patterns: ['PHARMAC', '\bDRUGS?\b', '\bCHEMISTS?\b', '\bRX\b']
+    source_categories: ['DRUG STORE']
+
+  - key: grocery_supermarket
+    label: Grocery / supermarket
+    name_patterns: ['SUPERMARKET', 'SUPER MARKET', '\bFOODTOWN\b', '\bC-?TOWN\b', '\bKEY FOOD\b', '\bASSOCIATED\b', '\bFOOD BAZAAR\b', '\bFINE FARE\b', '\bMET FOOD', '\bCTOWN\b', '\bKEY FOODS\b', '\bBRAVO\b']
+
+  - key: liquor_store
+    label: Liquor / wine store
+    name_patterns: ['\bLIQUORS?\b', '\bWINES?\b ?(&|AND) ?\bSPIRITS?\b', '\bWINE SHOP\b', '\bWINE (STORE|CELLAR)\b']
+    source_categories: ['LIQUOR STORE']
+
+  - key: bar
+    label: Bar / lounge
+    name_patterns: ['\bBAR\b', '\bPUB\b', '\bTAVERN\b', '\bLOUNGE\b', '\bSALOON\b', '\bBEER HALL\b', '\bBREWERY\b', '\bBIERGARTEN\b', '\bTAPROOM\b', '\bCOCKTAIL']
+    source_categories: ['CABARET']
+
+  - key: cafe_coffee_bakery
+    label: Café / coffee / bakery
+    name_patterns: ['\bCAFE\b', '\bCAFÉ\b', '\bCOFFEE\b', '\bESPRESSO\b', '\bBAKERY\b', '\bBAKE SHOP\b', '\bPATISSERIE\b', '\bPANADERIA\b', '\bTEA (HOUSE|SHOP|BAR)\b', '\bBOBA\b', '\bJUICE\b']
+
+  - key: restaurant
+    label: Restaurant
+    name_patterns: ['RESTAURANT', '\bPIZZ', '\bKITCHEN\b', '\bGRILL\b', '\bDINER\b', '\bBISTRO\b', '\bTAQUERIA\b', '\bCHINESE\b', '\bSUSHI\b', '\bTHAI\b', '\bRAMEN\b', '\bWINGS?\b', '\bBBQ\b', '\bBURGERS?\b', '\bPOLLO\b', '\bCHICKEN\b', '\bEATERY\b', '\bTRATTORIA\b', '\bCANTINA\b', '\bROTI\b', '\bJERK\b', '\bHALAL\b', '\bBUFFET\b']
+    source_categories: ['RESTAURANT', 'SIDEWALK CAFE', 'CATERING', 'FOOD & BEVERAGE BUSINESS', 'CATERER', 'CLUB', 'SUMMER RESTAURANT']
+
+  - key: bodega_deli
+    label: Bodega / deli / corner grocery
+    # Most small groceries hold a tobacco license, so tobacco is the bodega/deli proxy.
+    # Supermarkets and pharmacies that also sell tobacco are caught by earlier categories by name.
+    name_patterns: ['\bDELI\b', '\bDELICATESSEN\b', '\bBODEGA\b', '\bGROCERY\b', '\bGROCERIES\b', '\bMINI ?MARKET\b', '\bMINI ?MART\b', '\bCONVENIENCE\b', '\bFOOD (CORP|INC|MART|MARKET|CENTER)\b', '\bMEAT MARKET\b', '\bCANDY\b', '\bNEWS\b']
+    source_categories: ['TOBACCO RETAIL DEALER', 'CIGARETTE RETAIL DEALER', 'GROCERY STORE', 'SLS FRUITS VEGETABLES', 'STOOP LINE STAND']
+
+  - key: smoke_vape_shop
+    label: Smoke / vape shop
+    name_patterns: ['\bSMOKE\b', '\bVAPE\b', '\bVAPOR\b', '\bHOOKAH\b', '\bTOBACCO(NIST)?\b', '\bCIGAR\b', '\bHEADSHOP\b', '\bCANNABIS\b', '\bDISPENSARY\b']
+    source_categories: ['ELECTRONIC CIGARETTE DEALER']
+
+  - key: salon_barber
+    label: Salon / barber / nails
+    name_patterns: ['\bSALON\b', '\bBARBER', '\bNAILS?\b', '\bBEAUTY\b', '\bHAIR\b', '\bBRAID', '\bSPA\b', '\bLASHES\b', '\bBROWS?\b', '\bTHREADING\b']
+
+  - key: phone_electronics
+    label: Phone / electronics
+    name_patterns: ['WIRELESS', '\bCELL(ULAR)?\b', '\bMOBILE\b', '\bPHONES?\b', 'ELECTRONIC', '\bCOMPUTERS?\b']
+    source_categories: ['ELECTRONICS STORE', 'ELECTRONIC & HOME APPLIANCE SERVICE DEALER', 'ELECTRONIC HOME     APPL SERVICE DEALER', 'ELECTRONIC HOME APPL SERVICE DEALER', 'DEALER IN PRODUCTS FOR THE DISABLED', 'DEALER IN DEVICES FOR THE DISABLED']
+
+  - key: secondhand_pawn
+    label: Secondhand / pawn / jewelry
+    name_patterns: ['\bPAWN', '\bTHRIFT\b', '\bJEWEL', '\bGOLD\b', '\bVINTAGE\b']
+    source_categories: ['SECONDHAND DEALER - GENERAL', 'SECOND HAND DEALER  GENERAL', 'SECOND HAND DEALER GENERAL', 'PAWNBROKER']
+
+  - key: auto_parking
+    label: Auto / parking / car wash
+    name_patterns: ['\bAUTO\b', '\bCAR WASH\b', '\bPARKING\b', '\bGARAGE\b', '\bTIRES?\b', '\bMOTORS\b', '\bCOLLISION\b']
+    source_categories: ['SECONDHAND DEALER - AUTO', 'SECOND HAND DEALER AUTOMOBILE', 'GARAGE & PARKING LOT', 'GARAGES', 'PARKING LOTS', 'CAR WASH', 'TOW TRUCK COMPANY', 'GARAGE AND PARKING LOT']
+
+  # --- Registry-only coarse labels (the storefront registry gives a broad activity, not a name) ---
+  - key: food_service
+    label: Food service (registry, type unspecified)
+    source_categories: ['FOOD SERVICES']
+
+  - key: retail
+    label: Retail (other / unspecified)
+    name_patterns: ['\bDISCOUNT\b', '\b99 ?C', '\bDOLLAR\b', '\bCLOTH', '\bSHOES?\b', '\bFURNITURE\b', '\bHARDWARE\b', '\bBOUTIQUE\b', '\bFASHION\b', '\bOPTICAL\b', '\bFLOWERS?\b', '\bFLORIST\b']
+    source_categories: ['RETAIL', 'WHOLESALE', 'TEMPORARY RETAIL', 'NEWSSTAND', 'GENERAL VENDOR']
+
+  - key: services
+    label: Services / offices
+    name_patterns: ['\bTAX\b', '\bINSURANCE\b', '\bTRAVEL\b', '\bREALTY\b', '\bREAL ESTATE\b', '\bMULTI ?SERVICE', '\bDENTAL\b', '\bMEDICAL\b', '\bCLINIC\b', '\bLAW\b', '\bSCHOOL\b', '\bACADEMY\b', '\bLEARNING\b', '\bDAYCARE\b', '\bGYM\b', '\bFITNESS\b', '\bCHURCH\b', '\bSHIPPING\b', '\bCHECK CASH', '\bLOCKSMITH\b']
+    source_categories: ['EDUCATIONAL SERVICES', 'MISCELLANEOUS OTHER SERVICE', 'REAL ESTATE', 'HEALTH CARE or SOCIAL ASSISTANCE', 'HEALTH CARE OR SOCIAL ASSISTANCE', 'FINANCE & INSURANCE', 'LEGAL SERVICES', 'ACCOUNTING SERVICES', 'PUBLISHING', 'BROADCASTING/TELECOMM', 'MOVIES/VIDEO/SOUND', 'INFORMATION SERVICES', 'EMPLOYMENT AGENCY', 'EMPLOYMENT AGENCIES', 'LOCKSMITH', 'DEBT COLLECTION AGENCY', 'HOME IMPROVEMENT CONTRACTOR', 'HOME IMPROVEMENT    CONTRACTOR', 'PROCESS SERVING AGENCY', 'MANUFACTURING', 'SELF-STORAGE FACILITY', 'HOTEL']
+
+  - key: other
+    label: Other / unknown
+    source_categories: ['OTHER', 'NO BUSINESS ACTIVITY IDENTIFIED', 'NO BUSINESS ACTIVITY REPORTED']
+
+  - key: vacant
+    label: Vacant (registry)
