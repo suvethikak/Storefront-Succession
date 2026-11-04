@@ -193,7 +193,7 @@ Service settings, which persist across deploys:
 
 | Setting | Value | Why |
 |---|---|---|
-| Request timeout | 600 s | Runs take about 1–2 min, and the app stops its research phase at 200 s |
+| Request timeout | 300 s (5 min) | Same as the graders' wait. Runs take 1–2 min, and the app keeps itself under 270 s: researchers stop at 110 s, the research phase at 170 s, and the Writer gets the time that's left. |
 | Memory | 1 GiB | |
 | Session affinity | on | Run state and chat sessions are kept in memory |
 | Max instances | 3 | |

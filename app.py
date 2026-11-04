@@ -3,6 +3,7 @@ import asyncio
 import json
 import os
 import re
+import time
 import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -35,10 +36,13 @@ SETTINGS = ModelSettings(extra_args={"vertex_location": "global", "timeout": 90,
 MAX_RESEARCHERS = 6
 LEAD_MAX_TURNS = 10
 RESEARCHER_MAX_TURNS = 10
-# Graders wait up to 5 minutes per answer. Researchers that run long are stopped and reported as gaps,
-# and the research phase as a whole is cut off so the Writer always has time to finish.
-RESEARCHER_TIMEOUT_S = 120
-RESEARCH_PHASE_TIMEOUT_S = 200
+# Cloud Run's request timeout is 300 s (graders also wait at most 5 minutes). Everything below keeps a run
+# under TOTAL_BUDGET_S: slow researchers are stopped and reported as gaps, the research phase is cut off,
+# the Writer gets what's left, and the citation-fix pass is skipped if there isn't time for it.
+TOTAL_BUDGET_S = 270
+RESEARCHER_TIMEOUT_S = 110
+RESEARCH_PHASE_TIMEOUT_S = 170
+WRITER_MIN_S = 45  # don't start a citation-fix rewrite with less time left than this
 
 
 @dataclass
@@ -401,6 +405,8 @@ def check_citations(report: str, valid: set[str]) -> list[str]:
 async def deep_research(question: str, corridor: str, hooks: PanelHooks, earlier: str = "") -> tuple[str, Research]:
     """earlier: the conversation so far (e.g. the question the Lead asked to clarify), so a short reply makes sense."""
     run = Research(hooks=hooks)
+    t0 = time.monotonic()
+    left = lambda: TOTAL_BUDGET_S - (time.monotonic() - t0)
 
     # 1. Research: clarify, plan, fan out, check for gaps
     prompt = f"Earlier in this conversation:\n{earlier}\n\n" if earlier else ""
@@ -422,15 +428,27 @@ async def deep_research(question: str, corridor: str, hooks: PanelHooks, earlier
     findings = "\n\n---\n\n".join(run.findings)
     writer_input = (f"Question: {question}\n\nFindings:\n\n{findings}\n\n"
                     f"Evidence table (cite only these IDs):\n{run.evidence.table()}")
-    report = str((await Runner.run(writer, writer_input, context=run, hooks=hooks)).final_output)
+    try:
+        report = str((await asyncio.wait_for(Runner.run(writer, writer_input, context=run, hooks=hooks),
+                                             timeout=max(left(), 30))).final_output)
+    except asyncio.TimeoutError:
+        hooks.activity("Writer", "ran out of time; returning the researchers' findings as they are")
+        return (f"*The writer ran out of time, so here are the researchers' findings as they are.*\n\n{findings}"
+                f"\n\n## Sources\n\n" + "\n".join(f"- {line}" for line in run.evidence.table().splitlines())), run
 
     # 3. Citation check: send the draft back once if it cites evidence that doesn't exist.
     problems = check_citations(report, run.evidence.ids())
-    if problems:
+    if problems and left() < WRITER_MIN_S:
+        hooks.activity("Writer", "citation check found problems, but no time is left to rewrite: " + "; ".join(problems))
+    elif problems:
         hooks.activity("Writer", "citation check failed: " + "; ".join(problems))
         fix = (f"{writer_input}\n\nYour draft:\n\n{report}\n\nFix these citation problems and return the full "
                f"corrected report:\n- " + "\n- ".join(problems))
-        report = str((await Runner.run(writer, fix, context=run, hooks=hooks)).final_output)
+        try:
+            report = str((await asyncio.wait_for(Runner.run(writer, fix, context=run, hooks=hooks),
+                                                 timeout=left())).final_output)
+        except asyncio.TimeoutError:
+            hooks.activity("Writer", "citation fix ran out of time; keeping the first draft")
     return report, run
 
 
