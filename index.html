@@ -3,179 +3,424 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Wikipedia Deep Research</title>
+        <title>What Was Here Before</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
         <style>
-            * {
-                box-sizing: border-box;
-                margin: 0;
-                padding: 0;
+            :root {
+                --bg: #f7f3ec;
+                --paper: #fffdf8;
+                --ink: #1d1a16;
+                --muted: #6f675c;
+                --line: #e2d9ca;
+                --awning: #2f5d50;
+                --awning-2: #f3ead9;
+                --accent: #b5442c;
+                --chip: #ece3d3;
+                --shadow: 0 1px 0 rgba(0, 0, 0, 0.04), 0 8px 24px -16px rgba(40, 30, 10, 0.25);
+                --c-bodega: #c0692b;
+                --c-laundry: #3b77a8;
+                --c-food: #b5442c;
+                --c-cafe: #8a5a3c;
+                --c-bar: #7d3c8a;
+                --c-chain: #444;
+                --c-phone: #2f8a7d;
+                --c-retail: #9a8a3a;
+                --c-services: #6b7a8f;
+                --c-vacant: #b9b0a2;
+                --c-other: #9c9387;
             }
+            @media (prefers-color-scheme: dark) {
+                :root:not([data-theme="light"]) {
+                    --bg: #171512;
+                    --paper: #201d19;
+                    --ink: #eee7dc;
+                    --muted: #a39a8c;
+                    --line: #36312a;
+                    --awning: #3f7a69;
+                    --awning-2: #2a2620;
+                    --accent: #e0775c;
+                    --chip: #2e2a24;
+                    --shadow: none;
+                    --c-chain: #b8b0a4;
+                    --c-vacant: #5d574e;
+                }
+            }
+            :root[data-theme="dark"] {
+                --bg: #171512;
+                --paper: #201d19;
+                --ink: #eee7dc;
+                --muted: #a39a8c;
+                --line: #36312a;
+                --awning: #3f7a69;
+                --awning-2: #2a2620;
+                --accent: #e0775c;
+                --chip: #2e2a24;
+                --shadow: none;
+                --c-chain: #b8b0a4;
+                --c-vacant: #5d574e;
+            }
+            * { box-sizing: border-box; }
             body {
-                font-family: system-ui, sans-serif;
-                padding: 2rem;
-                color: #111;
+                margin: 0;
+                background: var(--bg);
+                color: var(--ink);
+                font: 16px/1.55 "IBM Plex Sans", system-ui, sans-serif;
             }
-            main {
-                max-width: 760px;
-                margin: 0 auto;
-                display: flex;
-                flex-direction: column;
-                gap: 1.5rem;
+            body.ctx-hidden { --context-width: 0px; }
+            body.ctx-hidden #context-panel { display: none; }
+            #context-panel { background: var(--paper) !important; color: var(--ink); border-left-color: var(--line) !important; }
+            #context-panel .ctx-head { background: var(--paper) !important; }
+
+            .awning {
+                height: 22px;
+                background: repeating-linear-gradient(90deg, var(--awning) 0 28px, var(--awning-2) 28px 56px);
+                border-bottom: 3px solid var(--awning);
+                -webkit-mask: radial-gradient(14px at 50% 100%, transparent 98%, #000) 0 0 / 28px 100%;
+                mask: radial-gradient(14px at 50% calc(100% + 4px), transparent 98%, #000) 0 0 / 28px 100%;
             }
-            section {
-                border: 1px solid #e0e0e0;
-                padding: 1.25rem 1.5rem;
+            main { max-width: 980px; margin: 0 auto; padding: 0 16px 64px; }
+            h1, h2, h3 { font-family: Fraunces, Georgia, serif; font-weight: 700; letter-spacing: -0.01em; margin: 0; }
+            .kicker { font: 500 12px/1 "IBM Plex Mono", monospace; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); }
+            header.hero { padding: 36px 0 12px; }
+            .hero h1 { font-size: clamp(34px, 6vw, 56px); line-height: 1.02; margin: 10px 0 12px; }
+            .hero .tagline { font-size: 19px; color: var(--muted); max-width: 640px; margin: 0; }
+            .about { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 26px 0 8px; }
+            .about div { background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; box-shadow: var(--shadow); }
+            .about h3 { font-size: 15px; margin-bottom: 4px; }
+            .about p { margin: 0; font-size: 14px; color: var(--muted); }
+
+            section.block { margin-top: 32px; }
+            .block > h2 { font-size: 22px; margin-bottom: 4px; }
+            .block > .sub { color: var(--muted); font-size: 14px; margin: 0 0 14px; }
+
+            .corridors { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
+            .corridor {
+                text-align: left; cursor: pointer; font: inherit; color: inherit;
+                background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px;
+                border-top: 5px solid var(--line); transition: border-color 0.15s, transform 0.15s;
             }
-            h1 {
-                font-size: 1rem;
-                font-weight: 600;
+            .corridor:hover { transform: translateY(-1px); }
+            .corridor[aria-pressed="true"] { border-color: var(--awning); border-top-color: var(--awning); outline: 2px solid var(--awning); outline-offset: -2px; }
+            .corridor .name { font-family: Fraunces, Georgia, serif; font-weight: 700; font-size: 17px; }
+            .corridor .hood { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+            .corridor dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 1px 8px; font: 12px/1.5 "IBM Plex Mono", monospace; }
+            .corridor dt { color: var(--muted); }
+            .corridor dd { margin: 0; text-align: right; }
+
+            .ask { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 16px; box-shadow: var(--shadow); }
+            textarea, input[type="text"] {
+                width: 100%; font: inherit; color: inherit; background: transparent;
+                border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; resize: vertical;
             }
-            h2 {
-                font-size: 0.75rem;
-                text-transform: uppercase;
-                letter-spacing: 0.05em;
-                color: #999;
-                font-weight: 400;
-                margin-bottom: 0.75rem;
-                display: flex;
-                justify-content: space-between;
-                align-items: baseline;
+            textarea:focus, input[type="text"]:focus { outline: 2px solid var(--awning); border-color: transparent; }
+            .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
+            .scope { font-size: 13px; color: var(--muted); }
+            .scope b { color: var(--ink); }
+            button.primary, button.ghost {
+                font: 600 14px "IBM Plex Sans", sans-serif; border-radius: 8px; padding: 10px 18px; cursor: pointer; border: 1px solid transparent;
             }
-            #question,
-            #url {
-                width: 100%;
-                padding: 0.6rem 0;
-                border: none;
-                border-bottom: 1px solid #e0e0e0;
-                font-size: 1rem;
-                outline: none;
+            button.primary { background: var(--awning); color: #fff; }
+            button.primary:disabled { opacity: 0.45; cursor: progress; }
+            button.ghost { background: transparent; border-color: var(--line); color: var(--ink); }
+            .spacer { flex: 1; }
+            .examples { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+            .examples button {
+                font: 13px "IBM Plex Sans", sans-serif; text-align: left; color: var(--ink); cursor: pointer;
+                background: var(--chip); border: 1px solid transparent; border-radius: 999px; padding: 6px 12px;
             }
-            #question:focus,
-            #url:focus {
-                border-bottom-color: #000;
+            .examples button:hover { border-color: var(--awning); }
+
+            .clarify { display: none; margin-top: 14px; border-left: 4px solid var(--accent); background: var(--chip); border-radius: 0 8px 8px 0; padding: 12px 14px; }
+            .clarify.show { display: block; }
+            .clarify p { margin: 0 0 8px; }
+
+            .lookup { display: flex; gap: 10px; }
+            .lookup input { flex: 1; }
+
+            .chain { display: flex; flex-wrap: wrap; align-items: stretch; gap: 6px 0; margin: 10px 0 4px; }
+            .chain .stop {
+                min-width: 120px; max-width: 210px; padding: 8px 10px; border-radius: 8px; background: var(--paper);
+                border: 1px solid var(--line); border-left: 6px solid var(--c-other); font-size: 13px; line-height: 1.3;
             }
-            #task label {
-                display: block;
-                font-size: 0.75rem;
-                color: #999;
+            .chain .stop.registry { border-style: dashed; border-left-style: solid; }
+            .chain .stop .who { font-weight: 600; overflow-wrap: anywhere; }
+            .chain .stop .when { font: 12px "IBM Plex Mono", monospace; color: var(--muted); margin-top: 2px; }
+            .chain .arrow { align-self: center; padding: 0 6px; color: var(--muted); font-size: 18px; }
+            .tl-card { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; margin-top: 12px; }
+            .tl-card h3 { font-size: 17px; }
+            .tl-card .note { font-size: 12px; color: var(--muted); margin: 6px 0 0; }
+            .legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; color: var(--muted); margin-top: 8px; }
+            .legend span::before { content: ""; display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 5px; background: var(--c); }
+
+            .run-head { display: flex; align-items: baseline; gap: 12px; }
+            #status { font: 13px "IBM Plex Mono", monospace; color: var(--muted); }
+            .lanes { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(200px, 1fr); gap: 10px; overflow-x: auto; padding-bottom: 6px; }
+            .lane { background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; min-height: 90px; }
+            .lane h4 { margin: 0 0 6px; font: 600 13px "IBM Plex Sans", sans-serif; display: flex; gap: 6px; align-items: center; }
+            .lane h4 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+            .lane.done h4 .dot { background: var(--awning); }
+            .lane ol { margin: 0; padding: 0; list-style: none; font: 12px/1.55 "IBM Plex Mono", monospace; color: var(--muted); }
+            .lane li.ret { color: var(--ink); }
+            .lane li.err { color: var(--accent); }
+            .empty { color: var(--muted); font-size: 14px; }
+
+            .report { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 22px 26px; box-shadow: var(--shadow); }
+            .report h2 { font-size: 21px; margin: 22px 0 6px; }
+            .report p, .report li { font-size: 16px; }
+            .report table { border-collapse: collapse; width: 100%; font-size: 14px; margin: 12px 0; display: block; overflow-x: auto; }
+            .report th, .report td { border-bottom: 1px solid var(--line); padding: 7px 8px; text-align: left; vertical-align: top; }
+            .report th { font-weight: 600; background: var(--chip); }
+            .report a { color: var(--awning); }
+            a.cite {
+                font: 500 11px "IBM Plex Mono", monospace; text-decoration: none; color: var(--awning) !important;
+                background: var(--chip); border-radius: 4px; padding: 1px 4px; margin: 0 1px; white-space: nowrap; vertical-align: 1px;
             }
-            #task label + label {
-                margin-top: 1rem;
-            }
-            #run {
-                margin-top: 1rem;
-            }
-            button {
-                padding: 0.75rem 1.5rem;
-                background: #000;
-                color: #fff;
-                border: none;
-                font-size: 0.75rem;
-                text-transform: uppercase;
-                letter-spacing: 0.05em;
-                cursor: pointer;
-            }
-            button:disabled {
-                opacity: 0.3;
-            }
-            #activity {
-                list-style: none;
-                font-size: 0.85rem;
-                line-height: 1.7;
-            }
-            #activity .agent {
-                font-weight: 600;
-            }
-            #activity .error {
-                color: #dc2626;
-            }
-            #status {
-                color: #999;
-                text-transform: none;
-                letter-spacing: 0;
-            }
-            #output {
-                font-family: ui-monospace, monospace;
-                font-size: 0.8rem;
-                white-space: pre-wrap;
-                word-break: break-word;
-                line-height: 1.5;
-            }
-            .empty {
-                color: #999;
+            a.cite:hover { background: var(--awning); color: #fff !important; }
+            .report-meta { font: 12px "IBM Plex Mono", monospace; color: var(--muted); margin-top: 10px; }
+
+            footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted); }
+            .toggle-ctx { position: fixed; right: 16px; bottom: 16px; z-index: 5; }
+
+            @media (max-width: 760px) {
+                .about { grid-template-columns: 1fr; }
+                .report { padding: 16px; }
+                .lookup { flex-direction: column; }
             }
         </style>
     </head>
-    <body>
+    <body class="ctx-hidden">
+        <div class="awning" aria-hidden="true"></div>
         <main>
-            <h1>Deep research: a lead splits your question, researchers walk Wikipedia in parallel, and a writer turns their findings into a cited report</h1>
+            <header class="hero">
+                <div class="kicker">NYC storefront succession · 5 corridors · 1985–today</div>
+                <h1>What Was Here Before</h1>
+                <p class="tagline">Thinking of opening on an NYC corridor? See what happened to the businesses before you: which long-running shops closed, what took their place, and how that lines up with rent.</p>
+                <div class="about">
+                    <div><h3>What it explores</h3><p>License, storefront-registry and Census records for five commercial corridors, plus local press. It traces closures of businesses that ran 10+ years and what replaced them.</p></div>
+                    <div><h3>Who it's for</h3><p>Small-business owners scouting a location, and residents, Community Board members and reporters watching a block change.</p></div>
+                    <div><h3>How to use it</h3><p>Pick a corridor (optional), ask a question or click an example, and watch the researchers work. Every claim in the report links to its evidence.</p></div>
+                </div>
+            </header>
 
-            <section>
-                <h2>Task</h2>
-                <form id="task">
-                    <label>Question
-                        <input id="question" value="How did the Apollo program's computers influence later computing?" placeholder="What do you want to know?" autocomplete="off" />
-                    </label>
-                    <label>Starting article
-                        <input id="url" value="https://en.wikipedia.org/wiki/Apollo_program" placeholder="A Wikipedia URL, e.g. https://en.wikipedia.org/wiki/Apollo_program" autocomplete="off" />
-                    </label>
-                    <button id="run" type="submit">Run</button>
+            <section class="block">
+                <h2>Pick a corridor</h2>
+                <p class="sub">Optional. Click again to clear. Numbers come straight from the database: closures of 10+-year businesses since 2014, rent change 2011–15 → 2020–24, and the latest storefront vacancy.</p>
+                <div class="corridors" id="corridors"><div class="empty">Loading corridors…</div></div>
+            </section>
+
+            <section class="block">
+                <h2>Ask a question</h2>
+                <p class="sub">Say where, what kind of business or measure, and (optionally) when. Vague questions get a follow-up question first.</p>
+                <form class="ask" id="ask">
+                    <textarea id="question" rows="2" placeholder="e.g. On Myrtle Ave, what kinds of businesses that ran 10+ years closed since 2015, and what replaced them?"></textarea>
+                    <div class="row">
+                        <span class="scope" id="scope">Scope: <b>all corridors</b></span>
+                        <span class="spacer"></span>
+                        <button class="primary" id="run" type="submit">Research</button>
+                    </div>
+                    <div class="examples" id="examples"></div>
+                    <div class="clarify" id="clarify">
+                        <p id="clarify-q"></p>
+                        <div class="lookup">
+                            <input type="text" id="clarify-a" placeholder="Your answer" autocomplete="off" />
+                            <button class="primary" type="button" id="clarify-send">Continue</button>
+                        </div>
+                    </div>
                 </form>
             </section>
 
-            <section>
-                <h2>Activity <span id="status"></span></h2>
-                <ol id="activity"><li class="empty">Each agent's steps appear here.</li></ol>
+            <section class="block">
+                <h2>What was here before?</h2>
+                <p class="sub">Look up one storefront instantly (no AI): every licensed business and registry record at that address, in order.</p>
+                <form class="lookup" id="lookup">
+                    <input type="text" id="address" placeholder="e.g. 2170 Frederick Douglass Blvd, 1372 Nostrand Ave, 76-01 Roosevelt Ave" autocomplete="off" />
+                    <button class="ghost" type="submit">Look up</button>
+                </form>
+                <div id="lookup-out"></div>
             </section>
 
-            <section>
-                <h2>Output</h2>
-                <div id="output" class="empty">The report's markdown appears here.</div>
+            <section class="block" id="run-block" hidden>
+                <div class="run-head"><h2>Researchers at work</h2><span id="status"></span></div>
+                <p class="sub">The Lead splits your question; researchers run in parallel, one column each; the Writer turns their findings into a cited report.</p>
+                <div class="lanes" id="lanes"></div>
             </section>
+
+            <section class="block" id="report-block" hidden>
+                <h2>Report</h2>
+                <p class="sub">Hover a citation like <a class="cite">E3</a> to see where it came from; citations with a web source open it.</p>
+                <article class="report" id="report"></article>
+                <div class="report-meta" id="report-meta"></div>
+                <div id="report-timelines"></div>
+            </section>
+
+            <footer>
+                Data: NYC DCWP business licenses (current + 2013 legacy export), NYS Retail Food Stores, NYS Liquor Authority licenses,
+                NYC Storefront Registry (2019+), U.S. Census ACS 5-year, and live Google Search for press. Licensed businesses only; the
+                report says what the data can't answer. Describes historical patterns; not financial or legal advice.
+            </footer>
         </main>
+        <button class="ghost toggle-ctx" id="toggle-ctx" type="button">Show agent contexts</button>
 
         <script src="/context-panel.js"></script>
         <script>
             const $ = (id) => document.getElementById(id);
-            let source = null;
-            let runId = null;
+            let source = null, runId = null, corridor = "", corridorNames = {}, earlier = "", lastQuestion = "", started = 0, ticker = null;
+            let evidence = {};
 
-            function addActivity(agent, text, cls = "") {
-                const li = document.createElement("li");
-                li.className = cls;
-                if (agent) {
-                    const name = document.createElement("span");
-                    name.className = "agent";
-                    name.textContent = agent + " ";
-                    li.appendChild(name);
-                }
-                li.append(text);
-                $("activity").appendChild(li);
+            const EXAMPLES = [
+                ["Myrtle Ave closures", "On Myrtle Ave, what kinds of businesses that ran 10+ years closed since 2015, and what replaced them?"],
+                ["Laundromats & delis", "Which pilot corridors lost the most laundromats and delis between 2005 and 2013?"],
+                ["Rent vs. turnover", "Do corridors with the biggest rent increases have higher turnover of long-running businesses?"],
+                ["Why did it close?", "Why did long-running pharmacies on Frederick Douglass Blvd close since 2015, and what replaced them?"],
+                ["Vacancy", "How has storefront vacancy changed on Nostrand Ave and 5th Ave since 2019?"],
+                ["Vague (asks back)", "Is Nostrand Ave gentrifying?"],
+            ];
+
+            const CAT = {
+                bodega_deli: ["Bodega / deli", "--c-bodega"], laundromat_drycleaner: ["Laundromat", "--c-laundry"],
+                restaurant: ["Restaurant", "--c-food"], food_service: ["Food service", "--c-food"], cafe_coffee_bakery: ["Café / bakery", "--c-cafe"],
+                bar: ["Bar", "--c-bar"], liquor_store: ["Liquor", "--c-bar"], chain: ["Chain", "--c-chain"],
+                phone_electronics: ["Phone / electronics", "--c-phone"], grocery_supermarket: ["Grocery", "--c-bodega"],
+                pharmacy: ["Pharmacy", "--c-services"], retail: ["Retail", "--c-retail"], secondhand_pawn: ["Secondhand / pawn", "--c-retail"],
+                smoke_vape_shop: ["Smoke shop", "--c-retail"], services: ["Services", "--c-services"], auto_parking: ["Auto", "--c-services"],
+                salon_barber: ["Salon / barber", "--c-cafe"], vacant: ["Vacant", "--c-vacant"], other: ["Other", "--c-other"],
+            };
+            const catColor = (c) => `var(${(CAT[c] || CAT.other)[1]})`;
+            const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch]);
+            const titleCase = (s) => String(s).toLowerCase().replace(/\b([a-z])/g, (m) => m.toUpperCase()).replace(/\b(Llc|Inc|Corp|Nyc|Ny)\b/g, (m) => m.toUpperCase());
+
+            // --- Corridors ---
+            fetch("/corridors").then((r) => r.json()).then((rows) => {
+                $("corridors").replaceChildren(...rows.map((c) => {
+                    corridorNames[c.key] = `${c.name} (${c.neighborhood})`;
+                    const b = document.createElement("button");
+                    b.type = "button"; b.className = "corridor"; b.setAttribute("aria-pressed", "false");
+                    const pct = (v) => (v == null ? "–" : (v * 100).toFixed(1) + "%");
+                    b.innerHTML = `<div class="name">${esc(c.name)}</div><div class="hood">${esc(c.neighborhood)}</div>
+                        <dl><dt>10+yr closures</dt><dd>${c.long_running_closures ?? "–"}</dd>
+                        <dt>rent</dt><dd>+${c.rent_pct_change ?? "–"}%</dd>
+                        <dt>vacant ${c.vacancy_year ?? ""}</dt><dd>${pct(c.vacancy_rate)}</dd></dl>`;
+                    b.onclick = () => {
+                        corridor = corridor === c.key ? "" : c.key;
+                        document.querySelectorAll(".corridor").forEach((x) => x.setAttribute("aria-pressed", String(x === b && corridor !== "")));
+                        $("scope").innerHTML = "Scope: <b>" + esc(corridor ? corridorNames[corridor] : "all corridors") + "</b>";
+                    };
+                    return b;
+                }));
+            }).catch(() => { $("corridors").innerHTML = '<div class="empty">Could not load corridors.</div>'; });
+
+            // --- Examples ---
+            $("examples").replaceChildren(...EXAMPLES.map(([label, q]) => {
+                const b = document.createElement("button");
+                b.type = "button"; b.textContent = label; b.title = q;
+                b.onclick = () => { $("question").value = q; earlier = ""; $("question").focus(); };
+                return b;
+            }));
+
+            // --- Timeline chain ---
+            function chain(rows, address, note) {
+                const card = document.createElement("div");
+                card.className = "tl-card";
+                const stops = rows.map((r) => {
+                    const yrs = r.start_year ? (r.end_year ? (r.start_year === r.end_year ? `${r.start_year}` : `${r.start_year}–${r.end_year}`)
+                        : r.status === "unknown" ? `${r.start_year}–? (last seen 2013)` : `${r.start_year}–now`) : r.status === "open" ? "open now" : "";
+                    const who = r.kind === "registry" ? r.occupant.replace(/^Registry: /, "") : titleCase(r.occupant);
+                    return `<div class="stop ${r.kind === "registry" ? "registry" : ""}" style="border-left-color:${catColor(r.category)}" title="${esc((CAT[r.category] || CAT.other)[0])} · ${esc((r.sources || []).join(", "))}">
+                        <div class="who">${esc(who)}</div><div class="when">${esc(yrs)}${r.kind === "registry" ? " · registry" : ""}${r.start_reliable === false ? " · start approx." : ""}</div></div>`;
+                });
+                card.innerHTML = `<h3>${esc(address)}</h3><div class="chain">${stops.join('<span class="arrow">→</span>')}</div>
+                    ${note ? `<p class="note">${esc(note)}</p>` : ""}`;
+                const cats = [...new Set(rows.map((r) => r.category))];
+                card.insertAdjacentHTML("beforeend", `<div class="legend">${cats.map((c) => `<span style="--c:${catColor(c)}">${esc((CAT[c] || CAT.other)[0])}</span>`).join("")}</div>`);
+                return card;
             }
 
-            function showOutput(markdown) {
-                $("output").className = "";
-                $("output").textContent = markdown;
-            }
-
-            function finish(message) {
-                $("status").textContent = message;
-                $("run").disabled = false;
-                source.close();
-            }
-
-            $("task").addEventListener("submit", (e) => {
+            $("lookup").addEventListener("submit", async (e) => {
                 e.preventDefault();
+                const address = $("address").value.trim();
+                if (!address) return;
+                $("lookup-out").innerHTML = '<p class="empty">Looking up…</p>';
+                try {
+                    const r = await (await fetch("/timeline?" + new URLSearchParams({ address }))).json();
+                    $("lookup-out").replaceChildren(r.rows.length ? chain(r.rows, r.rows[0].address, "Solid = licensed business; dashed = storefront registry (2019+). Shops sharing a house number share a timeline.")
+                        : Object.assign(document.createElement("p"), { className: "empty", textContent: r.note }));
+                } catch { $("lookup-out").innerHTML = '<p class="empty">Lookup failed.</p>'; }
+            });
+
+            // --- Research run ---
+            function lane(agent) {
+                const id = "lane-" + agent.replace(/\W+/g, "-");
+                let el = document.getElementById(id);
+                if (!el) {
+                    el = document.createElement("div");
+                    el.className = "lane"; el.id = id;
+                    el.innerHTML = `<h4><span class="dot"></span>${esc(agent)}</h4><ol></ol>`;
+                    $("lanes").appendChild(el);
+                }
+                return el;
+            }
+            function addActivity(agent, text) {
+                const el = lane(agent || "System");
+                const li = document.createElement("li");
+                if (/returned/.test(text)) li.className = "ret";
+                if (/stopped|failed/.test(text)) li.className = "err";
+                li.textContent = text.length > 160 ? text.slice(0, 160) + "…" : text;
+                el.querySelector("ol").appendChild(li);
+                if (text.startsWith("finished")) el.classList.add("done");
+            }
+            function setRunning(on) {
+                $("run").disabled = on; $("clarify-send").disabled = on;
+                clearInterval(ticker);
+                if (on) { started = Date.now(); ticker = setInterval(() => { $("status").textContent = `running · ${Math.round((Date.now() - started) / 1000)}s`; }, 1000); }
+            }
+
+            function renderReport(markdown, ev, toolCalls) {
+                evidence = Object.fromEntries((ev || []).map((e) => [e.evidence_id, e]));
+                // Render markdown first, then turn [E3, E5] in the sanitized HTML into chips, so a chip's tooltip
+                // (which can contain "|") never breaks a markdown table.
+                const safe = DOMPurify.sanitize(marked.parse(markdown));
+                const withCites = safe.replace(/\[(E\d+(?:\s*,\s*E\d+)*)\]/g, (_, ids) => ids.split(/\s*,\s*/).map((id) => {
+                    const e = evidence[id];
+                    const title = e ? `${e.tool}(${Object.entries(e.params || {}).filter(([, v]) => v !== null && v !== "").map(([k, v]) => `${k}=${v}`).join(", ")}) · ${e.url || e.source || ""}` : "not in evidence";
+                    const href = e && e.url ? e.url.split(" ; ")[0] : "#";
+                    return `<a class="cite" href="${esc(href)}" ${href !== "#" ? 'target="_blank" rel="noopener"' : ""} title="${esc(title)}">${id}</a>`;
+                }).join(""));
+                $("report").innerHTML = withCites;
+                $("report").querySelectorAll('a[href^="http"]').forEach((a) => { a.target = "_blank"; a.rel = "noopener"; });
+                $("report-block").hidden = false;
+                const agents = new Set((toolCalls || []).map((c) => c.agent));
+                $("report-meta").textContent = `${(toolCalls || []).length} tool calls · ${agents.size} agent types · ${Object.keys(evidence).length} evidence items · ${Math.round((Date.now() - started) / 1000)}s`;
+
+                // Storefront timelines the researchers looked up, as chains
+                const seen = new Set();
+                const cards = [];
+                for (const c of toolCalls || []) {
+                    if (c.name !== "storefront_timeline") continue;
+                    try {
+                        const r = JSON.parse(c.output);
+                        const key = r.params && r.params.address_key;
+                        if (!r.rows.length || seen.has(key)) continue;
+                        seen.add(key);
+                        cards.push(chain(r.rows, `${r.rows[0].address} [${r.evidence_id}]`));
+                    } catch {}
+                }
+                $("report-timelines").replaceChildren(...(cards.length ? [Object.assign(document.createElement("h3"), { textContent: "Storefronts in this report", style: "margin-top:22px;font-size:18px" }), ...cards] : []));
+            }
+
+            function start(question, context) {
                 if (source) source.close();
-                const params = new URLSearchParams({ question: $("question").value.trim(), url: $("url").value.trim() });
-
-                $("activity").replaceChildren();
-                $("output").className = "empty";
-                $("output").textContent = "The report's markdown appears here.";
-                $("status").textContent = "running";
-                $("run").disabled = true;
+                lastQuestion = question;
+                $("clarify").classList.remove("show");
+                $("lanes").replaceChildren();
+                $("run-block").hidden = false;
+                $("report-block").hidden = true;
                 resetContext();
-
+                setRunning(true);
+                const params = new URLSearchParams({ question, corridor, earlier: context || "" });
                 source = new EventSource("/run?" + params);
                 source.onmessage = (msg) => {
                     const event = JSON.parse(msg.data);
@@ -183,18 +428,51 @@
                     else if (event.type === "context") showContext(runId);
                     else if (event.type === "activity") addActivity(event.agent, event.text);
                     else if (event.type === "done") {
-                        showOutput(event.markdown);
-                        finish("done");
+                        setRunning(false); source.close();
+                        if (event.clarify) {
+                            $("status").textContent = "needs a detail";
+                            earlier = `User: ${question}\nAssistant: ${event.markdown}`;
+                            $("clarify-q").textContent = event.markdown;
+                            $("clarify").classList.add("show");
+                            $("clarify-a").value = ""; $("clarify-a").focus();
+                        } else {
+                            $("status").textContent = "done";
+                            earlier = "";
+                            renderReport(event.markdown, event.evidence, event.tool_calls);
+                            $("report-block").scrollIntoView({ behavior: "smooth", block: "start" });
+                        }
                     } else if (event.type === "error") {
-                        addActivity("", event.message, "error");
-                        finish("failed");
+                        setRunning(false); source.close();
+                        addActivity("System", "failed: " + event.message);
+                        $("status").textContent = "failed";
                     }
                 };
-                source.onerror = () => {
-                    addActivity("", "Lost the connection to the server.", "error");
-                    finish("failed");
-                };
+                source.onerror = () => { setRunning(false); source.close(); addActivity("System", "failed: lost the connection to the server."); $("status").textContent = "failed"; };
+            }
+
+            $("ask").addEventListener("submit", (e) => {
+                e.preventDefault();
+                const q = $("question").value.trim();
+                if (q) { syncUrl(q); start(q, ""); }
             });
+            const sendClarify = () => {
+                const a = $("clarify-a").value.trim();
+                if (a) start(a, earlier);
+            };
+            $("clarify-send").onclick = sendClarify;
+            $("clarify-a").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); sendClarify(); } });
+            $("question").addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("ask").requestSubmit(); } });
+
+            // Shareable links: /?q=question&corridor=myrtle_ave fills the form and starts the run.
+            const urlParams = new URLSearchParams(location.search);
+            if (urlParams.get("corridor")) corridor = urlParams.get("corridor");
+            if (urlParams.get("q")) { $("question").value = urlParams.get("q"); start(urlParams.get("q"), ""); }
+            const syncUrl = (q) => { try { history.replaceState(null, "", "?" + new URLSearchParams({ q, ...(corridor ? { corridor } : {}) })); } catch {} };
+
+            $("toggle-ctx").onclick = () => {
+                const hidden = document.body.classList.toggle("ctx-hidden");
+                $("toggle-ctx").textContent = hidden ? "Show agent contexts" : "Hide agent contexts";
+            };
         </script>
     </body>
 </html>

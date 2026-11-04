@@ -119,6 +119,9 @@ def same_business(a: dict, b: dict) -> bool:
 class Classifier:
     def __init__(self, path: Path):
         self.cats = yaml.safe_load(path.read_text())["categories"]
+        chain_cat = next(c for c in self.cats if c["key"] == "chain")
+        self.chain_patterns = [re.compile(p) for p in chain_cat["name_patterns"]] + [
+            re.compile(r"\b(CVS|DUANE READE|WALGREENS?|RITE AID|ECKERD)\b")]
         self.order = {c["key"]: i for i, c in enumerate(self.cats)}
         self.labels = {c["key"]: c["label"] for c in self.cats}
         self.name_rules = [(c["key"], [re.compile(p) for p in c.get("name_patterns", [])]) for c in self.cats]
@@ -133,6 +136,10 @@ class Classifier:
         if norm(raw_category) in self.source_rules:
             return self.source_rules[norm(raw_category)], "source_category"
         return "other", "fallback"
+
+    def is_chain(self, names: list[str]) -> bool:
+        text = " | ".join(norm(n) for n in names if n)
+        return any(p.search(text) for p in self.chain_patterns)
 
 
 # --- Step 1-3: records ---
@@ -266,6 +273,7 @@ def merge_businesses(records: list[dict], classifier: Classifier) -> list[dict]:
                 "zip": group[0]["zip"], "name": name,
                 "other_names": sorted({n for r in group for n in (r["name"], r["alt_name"]) if n and n != name}),
                 "category": category, "category_label": classifier.labels.get(category, category),
+                "is_chain": classifier.is_chain([n for r in group for n in (r["name"], r["alt_name"]) if n]),
                 "status": status, "start_date": start, "end_date": end,
                 "last_seen": end or (LEGACY_EXPORT_DATE if status == "unknown" else TODAY),
                 "start_reliable": bool(reliable_starts) and min(reliable_starts) == start,
@@ -318,12 +326,13 @@ def build_closures(businesses: list[dict], registry: list[dict]) -> list[dict]:
 
         closures.append({
             "business_id": b["business_id"], "corridor": b["corridor"], "address_key": b["address_key"],
-            "address": b["address"], "name": b["name"], "category": b["category"],
+            "address": b["address"], "name": b["name"], "category": b["category"], "is_chain": b["is_chain"],
             "start_date": b["start_date"], "closed_date": end, "closed_year": end.year,
             "years_open": b["years_open"], "start_reliable": b["start_reliable"],
             "long_running": bool(b["years_open"] and b["years_open"] >= LONG_RUNNING_YEARS),
             "replaced_by_business_id": nxt["business_id"] if nxt and basis.startswith("license") else None,
             "replaced_by_name": rep_name, "replaced_by_category": rep_cat,
+            "replaced_by_chain": bool(nxt and basis.startswith("license") and nxt["is_chain"]),
             "replaced_by_start": nxt["start_date"] if nxt and basis.startswith("license") else None,
             "gap_days": gap_days if basis.startswith("license") else None,
             "replacement_basis": basis,

@@ -52,7 +52,8 @@ COVERAGE = {
     "bodega_deli": "Bodegas/delis are identified mostly through tobacco retail licenses (DCWP), plus NYS food-store and "
                    "SLA grocery-beer licenses. A bodega without a tobacco or beer license may be missing.",
     "liquor_store": "Liquor stores are seen through SLA licenses (history ~2012 on).",
-    "chain": "Chains are identified by name from any license source.",
+    "chain": "Chains are identified by name from any license source. Drugstore chains (CVS, Duane Reade, Walgreens, "
+             "Rite Aid) are in 'pharmacy'; every row also has is_chain.",
 }
 GENERAL_NOTE = ("Licensed businesses only: industries no agency licenses (most retail, salons, barbers) are under-counted. "
                 "Status 'unknown' = last seen current in the Oct 2013 legacy export.")
@@ -80,7 +81,8 @@ class EvidenceLog:
         """The E# -> source table the Writer sees."""
         lines = []
         for e in self.items:
-            params = ", ".join(f"{k}={v}" for k, v in (e["params"] or {}).items() if v not in (None, ""))
+            params = ", ".join(f"{k}={str(v)[:140]}{'…' if len(str(v)) > 140 else ''}"
+                               for k, v in (e["params"] or {}).items() if v not in (None, "") and k != "address_key")
             where = e["url"] or e["source"]
             lines.append(f"[{e['evidence_id']}] {e['tool']}({params}) - {where}")
         return "\n".join(lines)
@@ -215,8 +217,8 @@ def find_closures(corridor: str, category: str | None = None, min_years: float =
     if not ck:
         return _bad_corridor("find_closures", corridor, params)
     cat = resolve_category(category)
-    sql = """SELECT name, category, address, year(start_date) AS opened, closed_year, years_open,
-                    start_reliable, replaced_by_name, replaced_by_category, replacement_basis,
+    sql = """SELECT name, category, is_chain, address, year(start_date) AS opened, closed_year, years_open,
+                    start_reliable, replaced_by_name, replaced_by_category, replaced_by_chain, replacement_basis,
                     registry_after, record_ids
              FROM closures WHERE corridor = ? AND coalesce(years_open, 0) >= ?"""
     args: list = [ck, min_years]
@@ -307,7 +309,7 @@ def replacements(corridor: str, closed_category: str | None = None, since_year: 
         where += " AND long_running"
     rows = _query(f"""
         SELECT category AS closed_category, coalesce(replaced_by_category, 'unknown') AS replaced_by,
-               count(*) AS n,
+               count(*) AS n, count(*) FILTER (WHERE replaced_by_chain) AS replaced_by_a_chain,
                list(name || ' (' || address || ', closed ' || closed_year || ')'
                     || coalesce(' -> ' || replaced_by_name, '') ORDER BY closed_year DESC)[1:3] AS examples
         FROM closures WHERE {where}

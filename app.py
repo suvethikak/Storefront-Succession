@@ -369,7 +369,7 @@ Structure:
 2. A "##" section per part of the question.
 3. One small markdown table where it helps (e.g. closed category -> replaced by, or corridor comparison).
 4. "## What the data can't tell us": the gaps the researchers reported and the coverage limits that matter here.
-5. "## Sources": one line per evidence ID you cited, copied from the evidence table.
+5. "## Sources": a bulleted list, one "- [E#] ..." line per evidence ID you cited, copied from the evidence table.
 
 Rules:
 - Cite inline with the evidence IDs from the findings, e.g. [E3]. Every sentence with a number, name, date or
@@ -450,7 +450,24 @@ def index():
 
 @app.get("/corridors")
 def corridors():
-    return [{"key": k, "name": c["name"], "neighborhood": c["neighborhood"]} for k, c in sf.CORRIDORS.items()]
+    """Corridors with headline numbers for the picker cards. Straight from the database, no model."""
+    stats = {r["corridor"]: r for r in sf.compare_corridors()["rows"]}
+    vac = {}
+    for k in sf.CORRIDORS:
+        rows = [r for r in sf.vacancy_trend(k)["rows"] if not r["partial_year"]]
+        vac[k] = rows[-1] if rows else {}
+    return [{"key": k, "name": c["name"], "neighborhood": c["neighborhood"], "zips": c["zips"],
+             "long_running_closures": stats.get(k, {}).get("long_running_closures"),
+             "long_running_closure_rate": stats.get(k, {}).get("long_running_closure_rate"),
+             "rent_pct_change": stats.get(k, {}).get("rent_pct_change"),
+             "vacancy_rate": vac[k].get("vacancy_rate"), "vacancy_year": vac[k].get("year")}
+            for k, c in sf.CORRIDORS.items()]
+
+
+@app.get("/timeline")
+def timeline(address: str):
+    """One address's chain of occupants, for the timeline card. Straight from the database, no model."""
+    return sf.storefront_timeline(address)
 
 
 @app.get("/run")
