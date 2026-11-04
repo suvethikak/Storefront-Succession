@@ -32,7 +32,7 @@ All sources are public. The NYC and NYS datasets need no account. Each one feeds
 | 4 | [Liquor Authority: Active Licenses](https://data.ny.gov/d/9s3h-dpkz) and [Inactive Licenses](https://data.ny.gov/d/6dg3-2z7i) | NYS State Liquor Authority (SLA), `9s3h-dpkz`, `6dg3-2z7i` | A liquor license (bar, restaurant, grocery beer, liquor store) | When bars and restaurants arrived and when they lapsed | Licenses |
 | 5 | [Storefronts Reported Vacant or Not](https://data.cityofnewyork.us/d/92iy-9c3n) | NYC Dept. of Finance (Local Law 157 storefront registry), `92iy-9c3n` | One ground-floor storefront filing per reporting year | Storefront vacancy on 12/31 and the occupant's primary business activity, from the 2019/20 through 2025 reporting years | Storefront |
 | 6 | [American Community Survey 5-year](https://www.census.gov/data/developers/data-sets/acs-5year.html) | U.S. Census Bureau, tables `B25064` (median gross rent), `B19013` (median household income), `B01003` (population) | A ZIP Code Tabulation Area (ZCTA) | Rent, income and population for 2011–2015 vs. the latest 5-year period | Demographics |
-| 7 | Reports and local press (NYC DCP storefront reports, NYC Council data team, THE CITY, Eater NY, Patch, neighborhood blogs) | Live web search at question time | A web page | The only source that can say **why** a business closed | Press |
+| 7 | Reports and local press (Patch, THE CITY, Eater NY, neighborhood blogs, city reports) | Live **Google Search via Gemini grounding** on Vertex AI, at question time ([`web.py`](web.py)) | A web source and the sentences it supports | The only source that can say **why** a business closed. Each claim is attributed to its outlet and URL. | Press |
 
 ### How to load the data
 
@@ -100,6 +100,14 @@ Match rates (from the last build): 99.7–100% of on-corridor records in every s
 - **Turnover rate:** closures ÷ storefronts per year.
 
 ## Running the app
+
+The app has four agent types: a **Lead** that plans, four kinds of **Researcher** (Licenses, Storefront, Demographics, Press) that run in parallel in fresh contexts, and a **Writer** that produces the cited report. Every tool result gets an evidence ID (`E1`, `E2`, ...). The report cites those IDs, and code checks that every ID it cites exists.
+
+### Endpoints
+
+- `GET /run?question=...&corridor=...`: Server-Sent Events stream used by the web page.
+- `POST /chat` with `{"message": "...", "session_id": null, "corridor": null}`. Returns the Project 1 shape: `{"response", "session_id", "tool_calls": [{"name", "args", "result", "agent", ...}]}`. `agent` is `lead`, `licenses_researcher`, `storefront_researcher`, `demographics_researcher` or `press_researcher`. If the agent asks a clarifying question, send the answer with the same `session_id`.
+- `POST /clear?session_id=...`: forget a chat session.
 
 ```bash
 gcloud auth application-default login   # Vertex AI (Gemini)

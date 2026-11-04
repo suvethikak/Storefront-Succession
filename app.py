@@ -1,6 +1,7 @@
 import argparse
 import asyncio
 import json
+import os
 import re
 import uuid
 from dataclasses import dataclass, field
@@ -12,8 +13,10 @@ from agents.extensions.models.litellm_model import LitellmModel
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.responses import FileResponse, StreamingResponse
+from pydantic import BaseModel
 
 import storefronts as sf
+import web
 from context_panel import AgentContexts, PanelHooks, add_context_panel
 
 load_dotenv(Path(__file__).parent / ".env")
@@ -32,6 +35,10 @@ SETTINGS = ModelSettings(extra_args={"vertex_location": "global", "timeout": 90,
 MAX_RESEARCHERS = 6
 LEAD_MAX_TURNS = 10
 RESEARCHER_MAX_TURNS = 10
+# Graders wait up to 5 minutes per answer. Researchers that run long are stopped and reported as gaps,
+# and the research phase as a whole is cut off so the Writer always has time to finish.
+RESEARCHER_TIMEOUT_S = 120
+RESEARCH_PHASE_TIMEOUT_S = 200
 
 
 @dataclass
@@ -43,6 +50,7 @@ class Research:
     findings: list[str] = field(default_factory=list)  # what each researcher reported, for the Writer
     evidence: sf.EvidenceLog = field(default_factory=sf.EvidenceLog)  # E1, E2, ... behind every citation
     tool_calls: list[dict] = field(default_factory=list)  # every tool call by every agent, for /chat
+    clarification: bool = False  # the Lead asked a question instead of researching
 
 
 def agent_field(name: str) -> str:
@@ -198,6 +206,27 @@ def run_sql(ctx: RunContextWrapper[Research], query: str) -> str:
     return _cite(ctx, sf.run_sql(query))
 
 
+@function_tool
+def web_search(ctx: RunContextWrapper[Research], query: str) -> str:
+    """Search the web (news, local blogs, city reports) and get each source's URL and the statements it supports.
+
+    Args:
+        query: A specific search, e.g. 'Rite Aid 2170 Frederick Douglass Blvd closing' or
+            'Myrtle Avenue Ridgewood small business closures rent'.
+    """
+    return _cite(ctx, web.web_search(query))
+
+
+@function_tool
+def fetch_page(ctx: RunContextWrapper[Research], url: str) -> str:
+    """Read the text of one web page found by web_search.
+
+    Args:
+        url: The page URL.
+    """
+    return _cite(ctx, web.fetch_page(url))
+
+
 # --- The researcher: one shape, one config per data source ---
 
 RESEARCHER_BASE = """\
@@ -231,6 +260,18 @@ SPECIALTIES = {
                  "occupants at specific addresses (storefront_timeline), and vacancy (vacancy_trend). For a couple of "
                  "telling examples, look up their addresses with storefront_timeline.",
     },
+    "press": {
+        "label": "Press",
+        "about": "news, local blogs and city reports found by web search: the ONLY source for why a business closed "
+                 "and for what locals or officials said about a corridor",
+        "tools": [find_closures, web_search, fetch_page],
+        "focus": "You cover the press. If the task names no businesses, first use find_closures to get a few notable "
+                 "long-running closures, then search for them by name and address (e.g. '<name> <address> closed'), plus "
+                 "one corridor-level search (e.g. '<corridor> <neighborhood> storefronts closing'). Report only what a "
+                 "source says, naming the outlet and date, e.g. 'Patch (Oct 2023) reported ...'. Use at most 3 web_search calls and "
+                 "at most 1 fetch_page. Prefer news outlets and official reports; real-estate listings and directories are not evidence of why something closed. If "
+                 "no source explains a closure, say so in 'Not answered:'.",
+    },
     "demographics": {
         "label": "Demographics",
         "about": "Census rent, income and population change around each corridor, and cross-corridor comparisons",
@@ -252,7 +293,7 @@ async def research(ctx: RunContextWrapper[Research], task: str, specialty: str) 
 
     Args:
         task: One specific thing to find out, naming the corridor(s), years and business types.
-        specialty: Which data the researcher uses: 'licenses', 'storefront' or 'demographics'.
+        specialty: Which data the researcher uses: 'licenses', 'storefront', 'demographics' or 'press'.
     """
     spec = SPECIALTIES.get(specialty.strip().lower())
     if not spec:
@@ -267,10 +308,16 @@ async def research(ctx: RunContextWrapper[Research], task: str, specialty: str) 
         instructions=f"{RESEARCHER_BASE}\n\n{spec['focus']}",
         tools=spec["tools"],
     )
-    result = await Runner.run(agent, f"Task: {task}", context=ctx.context, hooks=ctx.context.hooks,
-                              max_turns=RESEARCHER_MAX_TURNS)
-    ctx.context.findings.append(f"## {agent.name}\nTask: {task}\n\n{result.final_output}")
-    return str(result.final_output)
+    try:
+        result = await asyncio.wait_for(
+            Runner.run(agent, f"Task: {task}", context=ctx.context, hooks=ctx.context.hooks, max_turns=RESEARCHER_MAX_TURNS),
+            timeout=RESEARCHER_TIMEOUT_S)
+        output = str(result.final_output)
+    except asyncio.TimeoutError:
+        ctx.context.hooks.activity(agent.name, f"stopped after {RESEARCHER_TIMEOUT_S}s")
+        output = f"- Not answered: the researcher ran out of time ({RESEARCHER_TIMEOUT_S}s) before finishing this task."
+    ctx.context.findings.append(f"## {agent.name}\nTask: {task}\n\n{output}")
+    return output
 
 
 # --- The lead: clarifies, plans, fans out to researchers, and checks for gaps ---
@@ -299,7 +346,8 @@ Your researchers, one per data source:
    the same turn, so the researchers work in parallel. Pick the specialty whose data fits each task. Name the
    corridor(s), years and business types in every task.
    For questions comparing corridors or relating rent to turnover, include a demographics task that uses
-   compare_corridors.
+   compare_corridors. Use a press task when the question asks why businesses closed, or to add local context
+   on a few notable closures; press is the only source that can explain a closure.
 3. Review. Read the findings. If part of the question is still unanswered and another task could answer it,
    call research again for just that part. Do this at most twice.
 4. When the question is covered (or the data can't cover more), reply DONE and nothing else: a writer writes
@@ -326,7 +374,8 @@ Structure:
 Rules:
 - Cite inline with the evidence IDs from the findings, e.g. [E3]. Every sentence with a number, name, date or
   address needs one. Only use IDs that appear in the evidence table. In tables, cite once per row (last column).
-- Never give a reason why a business closed; the data shows when, not why.
+- Give a reason why a business closed only when a Press finding reports it, attributed to its source
+  ("according to Patch, ..."). Otherwise the data shows when, not why.
 - Rent, income and demographics are correlation only: never write that rent caused closures.
 - Write for a small-business owner scouting a location: plain, specific sentences. Don't claim more
   significance than the findings do: no "profoundly", "pivotal", "paving the way", or "it is worth noting".""",
@@ -346,17 +395,25 @@ def check_citations(report: str, valid: set[str]) -> list[str]:
     return problems
 
 
-async def deep_research(question: str, corridor: str, hooks: PanelHooks) -> tuple[str, Research]:
+async def deep_research(question: str, corridor: str, hooks: PanelHooks, earlier: str = "") -> tuple[str, Research]:
+    """earlier: the conversation so far (e.g. the question the Lead asked to clarify), so a short reply makes sense."""
     run = Research(hooks=hooks)
 
     # 1. Research: clarify, plan, fan out, check for gaps
-    prompt = f"Question: {question}"
+    prompt = f"Earlier in this conversation:\n{earlier}\n\n" if earlier else ""
+    prompt += f"Question: {question}"
     if corridor:
         prompt += f"\nCorridor chosen by the user: {corridor}"
-    lead_result = await Runner.run(lead, prompt, context=run, hooks=hooks, max_turns=LEAD_MAX_TURNS)
-    lead_reply = str(lead_result.final_output).strip()
+    try:
+        lead_result = await asyncio.wait_for(Runner.run(lead, prompt, context=run, hooks=hooks, max_turns=LEAD_MAX_TURNS),
+                                             timeout=RESEARCH_PHASE_TIMEOUT_S)
+        lead_reply = str(lead_result.final_output).strip()
+    except asyncio.TimeoutError:
+        hooks.activity("Lead", f"research phase stopped at {RESEARCH_PHASE_TIMEOUT_S}s; writing from findings so far")
+        lead_reply = "DONE"
     if lead_reply.upper().startswith("CLARIFY:") or not run.findings:
-        return lead_reply.split(":", 1)[1].strip() if ":" in lead_reply else lead_reply, run
+        run.clarification = True
+        return lead_reply.split(":", 1)[1].strip() if lead_reply.upper().startswith("CLARIFY:") else lead_reply, run
 
     # 2. Write: one call, outside the loop. The Writer sees only the question, findings and evidence table.
     findings = "\n\n---\n\n".join(run.findings)
@@ -397,7 +454,7 @@ def corridors():
 
 
 @app.get("/run")
-async def run(question: str, corridor: str = ""):
+async def run(question: str, corridor: str = "", earlier: str = ""):
     """Research one question and stream what happens as Server-Sent Events."""
     run_id = str(uuid.uuid4())
     sessions[run_id] = AgentContexts()
@@ -406,9 +463,9 @@ async def run(question: str, corridor: str = ""):
 
     async def work():
         try:
-            report, state = await deep_research(question, corridor, hooks)
-            queue.put_nowait({"type": "done", "markdown": report, "evidence": state.evidence.items,
-                              "tool_calls": state.tool_calls})
+            report, state = await deep_research(question, corridor, hooks, earlier)
+            queue.put_nowait({"type": "done", "markdown": report, "clarify": state.clarification,
+                              "evidence": state.evidence.items, "tool_calls": state.tool_calls})
         except Exception as e:
             # Auth, quota, a model that won't stop: show it on the page, not as a dropped stream.
             queue.put_nowait({"type": "error", "message": f"{type(e).__name__}: {str(e)[:500]}"})
@@ -429,6 +486,49 @@ async def run(question: str, corridor: str = ""):
     return StreamingResponse(events(), media_type="text/event-stream")
 
 
+# --- /chat: the Project 1 response shape, with an agent field on every tool call ---
+
+# session_id -> the conversation so far, as text for the Lead. In-memory, single process.
+chats: dict[str, list[str]] = {}
+
+
+class ChatRequest(BaseModel):
+    message: str
+    session_id: str | None = None
+    corridor: str | None = None
+
+
+class ChatResponse(BaseModel):
+    response: str
+    session_id: str
+    tool_calls: list[dict]
+
+
+@app.post("/chat", response_model=ChatResponse)
+async def chat(request: ChatRequest):
+    session_id = request.session_id or str(uuid.uuid4())
+    history = chats.setdefault(session_id, [])
+    sessions[session_id] = AgentContexts()  # the context panel can show this run too
+    hooks = ResearchHooks(sessions[session_id], lambda event: None)
+    state = None
+    try:
+        response, state = await deep_research(request.message, request.corridor or "", hooks, "\n".join(history[-6:]))
+    except Exception as e:
+        # Auth, quota, a model that won't stop: say so in the chat, not as a 500.
+        response = f"Research failed: {type(e).__name__}: {str(e)[:300]}"
+    history += [f"User: {request.message}", f"Assistant: {response[:1500]}"]
+    calls = [{"name": c["name"], "args": c["arguments"], "result": c["output"], "agent": c["agent"],
+              "agent_name": c["agent_name"], "evidence_id": c["evidence_id"]} for c in (state.tool_calls if state else [])]
+    return ChatResponse(response=response, session_id=session_id, tool_calls=calls)
+
+
+@app.post("/clear")
+def clear(session_id: str | None = None):
+    chats.pop(session_id, None)
+    sessions.pop(session_id, None)
+    return {"status": "ok"}
+
+
 async def ask(question: str, corridor: str = "") -> None:
     """Command-line run: uv run app.py --ask "question" [--corridor myrtle_ave]"""
     hooks = ResearchHooks(AgentContexts(), lambda e: print(f"  · {e['agent']}: {e['text']}") if e["type"] == "activity" else None)
@@ -446,4 +546,6 @@ if __name__ == "__main__":
     if args.ask:
         asyncio.run(ask(args.ask, args.corridor))
     else:
-        uvicorn.run(app, host="127.0.0.1", port=8000)
+        # Cloud Run tells us which port to use with $PORT (locally it's just 8000)
+        port = int(os.environ.get("PORT", 8000))
+        uvicorn.run(app, host="0.0.0.0" if "PORT" in os.environ else "127.0.0.1", port=port)

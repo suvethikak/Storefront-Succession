@@ -77,8 +77,10 @@ It is built by extending the starter (same stack, same flat layout, same Lead â†
 ## Agent wiring (`app.py`, `storefronts.py`)
 
 - `storefronts.py` holds pure query functions that return `{tool, source, params, rows, total_rows, note}`. In `app.py`, each `@function_tool` wrapper passes the result through `_cite()`, which stamps it with `E#` from the run's `EvidenceLog`. `COVERAGE` gives per-category caveats (e.g. laundries are invisible after 2013), and these are injected into `note`.
-- Specialties live in `SPECIALTIES` (licenses, storefront, demographics; press is still to come). `research(task, specialty)` clones the one `researcher` with that specialty's tools and focus.
+- Specialties live in `SPECIALTIES` (licenses, storefront, demographics, press). Press uses `web.py`: Gemini with Google Search grounding (thinking off, ~4 s/search, retries on 429). It keeps only grounding-supported sentences per source and resolves the vertexaisearch redirect URLs. `fetch_page` refuses non-public hosts, including the Cloud Run metadata server, and checks every redirect hop. `research(task, specialty)` clones the one `researcher` with that specialty's tools and focus.
 - Lead returns `CLARIFY: ...` (the app returns the question without running research) or `DONE`. The Writer gets the findings plus `EvidenceLog.table()`. `check_citations` sends the draft back once if it contains unknown `[E#]` IDs.
+- Latency guards: `RESEARCHER_TIMEOUT_S` (120) per Researcher and `RESEARCH_PHASE_TIMEOUT_S` (200) for the Lead phase. On timeout the run continues to the Writer with the findings so far. Typical runs take 60â€“120 s.
+- `/chat` keeps the Project 1 shape (`response`, `session_id`, `tool_calls[{name,args,result,agent}]`) plus per-session history, so a reply to a `CLARIFY` question is understood in context.
 - `ResearchHooks.on_tool_end` records every tool call as `{agent, name, arguments, evidence_id, output}` in `Research.tool_calls`, for `/chat`.
 
 ## Build design (`build_data.py`)
