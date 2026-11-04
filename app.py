@@ -377,6 +377,9 @@ Rules:
 - Give a reason why a business closed only when a Press finding reports it, attributed to its source
   ("according to Patch, ..."). Otherwise the data shows when, not why.
 - Rent, income and demographics are correlation only: never write that rent caused closures.
+- If a finding says the data doesn't observe part of the question (e.g. laundromats after 2013), say that in the
+  opening answer and don't rank or compare on counts from the unobserved period; give the period the data does
+  cover instead.
 - Write for a small-business owner scouting a location: plain, specific sentences. Don't claim more
   significance than the findings do: no "profoundly", "pivotal", "paving the way", or "it is worth noting".""",
     model=MODEL,

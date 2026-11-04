@@ -14,6 +14,8 @@ The repo currently holds the unmodified course starter `wikipedia-deep-research`
 - Smoke-test the data tools without a model: `uv run python -c "import storefronts as s; print(s.find_closures('myrtle', since_year=2015))"`.
 - Data coverage check: `uv run validate_data.py` (`--refresh` to re-download). It caches raw Socrata pulls in `data/raw/<source>__<corridor>.json` and writes `data/VALIDATION.md`. Source field mappings live in its `SOURCES` dict; reuse them in `build_data.py`. ACS needs `CENSUS_API_KEY` in `.env` (the Census API now rejects keyless calls with a 302).
 - Build the database: `uv run build_data.py` (`--refresh` re-downloads first). It writes `data/storefronts.duckdb` (committed, ~3 MB) and `data/BUILD_REPORT.md` (match rates, per-corridor counts). Inspect it with `uv run python -c "import duckdb; print(duckdb.connect('data/storefronts.duckdb', read_only=True).sql('...'))"`.
+- Regenerate the README's sample answers (baseline vs agent, with traces) into `docs/samples/`: `uv run run_samples.py [1 2 3]`.
+- Deploy: push to `main`. A Cloud Build trigger (region northamerica-northeast1, buildpacks, entrypoint `uvicorn app:app --host 0.0.0.0 --port $PORT`) updates the Cloud Run service `storefront-succession-git` in europe-west1. Service settings such as timeout, memory and access are set on the service, not in the repo.
 - Add a dependency: `uv add <pkg>` (keeps `uv.lock`, which must be committed, in sync).
 - No tests or linter are configured yet.
 

@@ -6,7 +6,7 @@ A deep-research agent (Project 2, Deep Research path) that traces how long-runni
 
 **Who it's for:** small-business owners scouting a location, plus residents, Community Board members and local reporters watching a block change.
 
-> Status: data validation ([`data/VALIDATION.md`](data/VALIDATION.md)) and the offline database build ([`data/BUILD_REPORT.md`](data/BUILD_REPORT.md)) are done. The agent, front end and deploy are in progress. The app code is still the course `wikipedia-deep-research` starter.
+**Live app:** https://storefront-succession-git-895199835501.europe-west1.run.app (Cloud Run, continuous deploy from `main`). Built on the course `wikipedia-deep-research` starter.
 
 ## Pilot corridors
 
@@ -99,6 +99,58 @@ Match rates (from the last build): 99.7–100% of on-corridor records in every s
 - **Replacement:** the next business at the same address, or "vacant" if there is none within 12 months.
 - **Turnover rate:** closures ÷ storefronts per year.
 
+## Sample queries
+
+Each query was run three ways:
+- **Expected:** computed directly from the tables with SQL.
+- **Baseline:** the same model (`gemini-3.5-flash`) with no tools and no system prompt.
+- **Agent:** our full Lead, Researchers and Writer pipeline.
+
+Full answers and every tool call (with its `agent`) are in [`docs/samples/`](docs/samples/). To regenerate them, run `uv run run_samples.py`.
+
+### 1. On Myrtle Ave, what kinds of businesses that ran 10+ years closed since 2015, and what replaced them?
+
+- **Expected** (`closures` table, `corridor='myrtle_ave' AND long_running AND closed_year >= 2015`): about 30 long-running closures.
+  - By category: bodegas/delis 15, pharmacies 4, bars 2, phone/electronics 2, other chains 2, and a grocery, a restaurant, a services business and an auto dealer.
+  - Most have no recorded successor (17 unknown). The known successors are mixed: services 3, retail 2, restaurant 2, and one each of bar, bodega, pharmacy and vacant.
+  - Examples: Eckerd #5537 (60-36 Myrtle) → Walgreens; Vaqueros (1541 Myrtle) → Aby's Bar; Aryan Grocery (79-39 Myrtle) → The Corner Deli Grill; Rent-A-Center (56-52 Myrtle) → Purple Apple.
+- **Baseline:** describes the Fort Greene / Clinton Hill end of Myrtle Ave, which is not this corridor. It names closures (Associated Supermarket, Five Spot, Maggie Brown) that aren't in the data and gives generic gentrification explanations with no sources.
+- **Agent** (84 s, 22 tool calls; [full answer and trace](docs/samples/sample1.md)): lists the long-running closures by category with addresses and years (Goldstar Chen 22.3 yrs, Care Express Pharmacy 24.2 yrs, Caribe Billards 27.7 yrs, …) and a replacement table. Each fact is cited to a tool result. It notes that many storefronts have no recorded successor.
+
+### 2. Which pilot corridors lost the most laundromats and delis between 2013 and today?
+
+This one tests whether the agent admits a gap in the data.
+
+- **Expected** (`closures` and `businesses`):
+  - Bodega/deli closures since 2013: Nostrand 97, Myrtle 60, 5th Ave 49, Frederick Douglass 33, Roosevelt 27.
+  - **Laundromats after 2013 can't be counted.** Laundries appear only in the DCWP legacy export, which ends in October 2013, and 81 laundromats last seen in it have status unknown. The data does cover 2005–2013: Nostrand 30, Myrtle 24, Frederick Douglass 13, 5th Ave 10, Roosevelt 7.
+- **Baseline:** invents a "DCP Storefront Survey" with "24 study corridors" and names corridors outside our pilot (Grand Street, Jackson Ave, Fulton Street). No numbers.
+- **Agent** (116 s, 33 tool calls; [full answer and trace](docs/samples/sample2.md)): "Nostrand Ave lost the most bodega and deli businesses with 97 recorded closures, followed by Myrtle Ave with 60 … the dataset cannot determine which pilot corridor lost the most laundromats during this period because [the] DCWP legacy licensing data for laundromats ends in October 2013." The Press Researcher adds sourced reasons for a few Myrtle Ave closures, such as a building demolition (Myrtle Avenue Brooklyn Partnership) and a 2024 fire (Bushwick Daily).
+
+### 3. Do corridors with the biggest rent increases have higher turnover of long-running businesses?
+
+- **Expected** (`compare_corridors` over `closures`, `businesses` and `acs`):
+
+  | Corridor | Rent change (ACS 2011–15 → 2020–24) | Long-running closure rate since 2014 | Annual turnover |
+  |---|---|---|---|
+  | Myrtle Ave | +71.3% | 0.274 | 0.066 |
+  | Nostrand Ave | +62.9% | 0.292 | 0.108 |
+  | 5th Ave | +50.6% | 0.190 | 0.062 |
+  | Frederick Douglass Blvd | +49.4% | 0.265 | 0.083 |
+  | Roosevelt Ave | +39.7% | 0.167 | 0.063 |
+
+  The Spearman rank correlation between rent change and long-running closure rate is **0.8**; between rent change and overall turnover it is 0.3. That suggests a pattern, but with n = 5 it is not conclusive, and it is correlation only.
+- **Baseline:** "the short answer is **yes**", supported by general urban-economics arguments and studies of San Francisco and London. Nothing about these corridors.
+- **Agent** (123 s, 33 tool calls; [full answer and trace](docs/samples/sample3.md)): reports the same table and the 0.8 / 0.3 rank correlations. It says the pattern is weaker for overall turnover, that five corridors can't settle it, and that the data can't show rent caused any closure.
+
+### Edge cases
+
+| Input | Behaviour |
+|---|---|
+| "Is Nostrand Ave gentrifying?" | Asks what to measure (rent and income, closures, or vacancy). A short reply in the same session continues the research. |
+| "What about Astoria?" | Says Astoria isn't covered and offers the pilot corridors. |
+| "Why did the Rite Aid on Frederick Douglass Blvd close?" | The Press Researcher finds Rite Aid's Chapter 11 bankruptcy and attributes it to named outlets. The Writer gives a reason only when a press source supports it. |
+
 ## Running the app
 
 The app has four agent types: a **Lead** that plans, four kinds of **Researcher** (Licenses, Storefront, Demographics, Press) that run in parallel in fresh contexts, and a **Writer** that produces the cited report. Every tool result gets an evidence ID (`E1`, `E2`, ...). The report cites those IDs, and code checks that every ID it cites exists.
@@ -113,3 +165,34 @@ The app has four agent types: a **Lead** that plans, four kinds of **Researcher*
 gcloud auth application-default login   # Vertex AI (Gemini)
 uv run app.py                           # http://localhost:8000
 ```
+
+### Front end
+
+`index.html` shows:
+- what the agent explores, who it's for, and how to use it
+- corridor cards with live stats, which also work as the corridor picker
+- example questions you can click
+- an inline box for answering clarifying questions
+- an instant, model-free address lookup that draws the "what was here before" chain
+- one lane per agent while research runs
+- the report rendered as markdown, with citation chips that show their source on hover
+- timeline chains for every storefront the agents looked up
+- the starter's context panel, behind a toggle
+
+`/?q=...&corridor=...` links start a run directly.
+
+## Deployment
+
+Cloud Run service `storefront-succession-git` (europe-west1) is redeployed by a Cloud Build trigger on every push to `main`. The trigger builds with Google buildpacks, which read `uv.lock`, and starts `uvicorn app:app --host 0.0.0.0 --port $PORT`.
+
+The database (`data/storefronts.duckdb`, ~3 MB) ships in the repo, so nothing is downloaded at startup.
+
+Service settings, which persist across deploys:
+
+| Setting | Value | Why |
+|---|---|---|
+| Request timeout | 600 s | Runs take about 1–2 min, and the app stops its research phase at 200 s |
+| Memory | 1 GiB | |
+| Session affinity | on | Run state and chat sessions are kept in memory |
+| Max instances | 3 | |
+| Access | unauthenticated | |
