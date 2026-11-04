@@ -1,0 +1,65 @@
+# Pilot corridors. A record belongs to a corridor when its ZIP is in `zips` and its
+# street (after uppercasing and collapsing whitespace) matches one of `street_patterns`
+# (Python regexes, matched against the street name or the full "123 STREET NAME" address).
+#
+# House-number ranges are not applied yet: validation first checks raw coverage.
+# Swap out any corridor that VALIDATION.md shows is too thin.
+
+corridors:
+  frederick_douglass_blvd:
+    name: Frederick Douglass Blvd
+    neighborhood: Central Harlem
+    borough: Manhattan
+    zips: ["10026", "10027", "10030", "10039"]
+    # Frederick Douglass Blvd is 8th Ave north of Central Park; records use both names.
+    # Coarse server-side filter (SoQL LIKE); street_patterns then decide precisely.
+    like_terms: ["DOUGLAS", "8 AV", "8TH AV", "EIGHTH AV"]
+    street_patterns:
+      - '\bFREDE?RICK\s+DOUGL?ASS?\b'   # registry often spells it FREDRICK
+      - '\bF(RED)?\.?\s*DOUGLASS?\b'
+      - '(^|[^0-9A-Z])(8|8TH|EIGHTH)\s+AVE?(NUE)?\b'
+
+  myrtle_ave:
+    name: Myrtle Ave
+    neighborhood: Bushwick / Ridgewood
+    borough: Brooklyn / Queens
+    # 11385 adds the Ridgewood end (Myrtle Ave BID), the busiest stretch of the corridor.
+    zips: ["11206", "11221", "11237", "11385"]
+    # Coarse server-side filter (SoQL LIKE); street_patterns then decide precisely.
+    like_terms: ["MYRTLE"]
+    street_patterns:
+      - '\bMYRTLE\s+AVE(NUE)?\b'
+      - '\bMYRTLE\s+AV\b'
+
+  fifth_ave_sunset_park:
+    name: 5th Ave
+    neighborhood: Sunset Park
+    borough: Brooklyn
+    zips: ["11220", "11232"]
+    # Coarse server-side filter (SoQL LIKE); street_patterns then decide precisely.
+    like_terms: ["5 AV", "5TH AV", "FIFTH AV"]
+    street_patterns:
+      - '(^|\s)(5|5TH|FIFTH)\s+AVE(NUE)?\b'
+      - '(^|\s)(5|5TH|FIFTH)\s+AV\b'
+
+  roosevelt_ave_jackson_heights:
+    name: Roosevelt Ave
+    neighborhood: Jackson Heights
+    borough: Queens
+    zips: ["11372", "11373"]
+    # Coarse server-side filter (SoQL LIKE); street_patterns then decide precisely.
+    like_terms: ["ROOSEVELT"]
+    street_patterns:
+      - '\bROOSEVELT\s+AVE(NUE)?\b'
+      - '\bROOSEVELT\s+AV\b'
+
+  nostrand_ave:
+    name: Nostrand Ave
+    neighborhood: Crown Heights / Flatbush
+    borough: Brooklyn
+    zips: ["11216", "11225", "11226"]
+    # Coarse server-side filter (SoQL LIKE); street_patterns then decide precisely.
+    like_terms: ["NOSTRAND"]
+    street_patterns:
+      - '\bNOSTRAND\s+AVE(NUE)?\b'
+      - '\bNOSTRAND\s+AV\b'
