@@ -90,7 +90,7 @@ def split_address(full: str) -> tuple[str, str]:
 # --- Names ---
 
 def name_key(name: str) -> str:
-    s = re.sub(r"[^A-Z0-9& ]", " ", norm(name))
+    s = re.sub(r"[^A-Z0-9 ]", " ", norm(name).replace("&", " AND "))
     s = re.sub(r"\b(INC|CORP|CORPORATION|LLC|LTD|CO|DBA|THE)\b", " ", s)
     return re.sub(r"\s+", " ", s).strip()
 
@@ -105,7 +105,8 @@ def same_business(a: dict, b: dict) -> bool:
         for kb in b["name_keys"]:
             if not ka or not kb:
                 continue
-            if ka == kb or (min(len(ka), len(kb)) >= 6 and (ka in kb or kb in ka)):
+            ca, cb = ka.replace(" ", ""), kb.replace(" ", "")
+            if ca == cb or (min(len(ca), len(cb)) >= 6 and (ca in cb or cb in ca)):
                 return True
             da, db = distinctive(ka), distinctive(kb)
             if da and db and len(da & db) / min(len(da), len(db)) >= 0.5:
@@ -345,7 +346,10 @@ def registry_spells(regs: list[dict]) -> list[dict]:
             cur["activities"].add(r["activity"])
     spells = []
     for y in sorted(per_year):
-        state = "VACANT" if per_year[y]["vacant"] else " / ".join(sorted(per_year[y]["activities"]))
+        acts = sorted(per_year[y]["activities"])
+        # One house number can hold several storefronts; more than two activities = a multi-shop building.
+        state = ("VACANT" if per_year[y]["vacant"] else " / ".join(acts) if len(acts) <= 2
+                 else f"MULTIPLE STOREFRONTS ({len(acts)} ACTIVITIES)")
         if spells and spells[-1]["state"] == state and spells[-1]["end_year"] == y - 1:
             spells[-1]["end_year"] = y
         else:
@@ -370,7 +374,8 @@ def build_timeline(businesses: list[dict], registry: list[dict], classifier: Cla
     for addr, regs in reg_by_addr.items():
         r0 = regs[0]
         for s in registry_spells(regs):
-            cat = "vacant" if s["state"] == "VACANT" else classifier.classify([], s["state"].split(" / ")[0])[0]
+            cat = ("vacant" if s["state"] == "VACANT" else "other" if s["state"].startswith("MULTIPLE")
+                   else classifier.classify([], s["state"].split(" / ")[0])[0])
             rows.append({
                 "address_key": addr, "corridor": r0["corridor"], "address": r0["address"],
                 "kind": "registry", "business_id": None,
@@ -426,6 +431,8 @@ def to_df(rows: list[dict], drop=()) -> pd.DataFrame:
     for col in df.columns:
         if col.endswith("_date") or col in ("last_seen", "replaced_by_start"):
             df[col] = pd.to_datetime(df[col])
+        elif col.endswith("_year") or col in ("year", "gap_days"):
+            df[col] = df[col].astype("Int64")
     return df
 
 

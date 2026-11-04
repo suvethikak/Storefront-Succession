@@ -19,7 +19,7 @@ categories:
 
   - key: pharmacy
     label: Pharmacy
-    name_patterns: ['PHARMAC', '\bDRUGS?\b', '\bCHEMISTS?\b', '\bRX\b']
+    name_patterns: ['PHARMAC', 'FARMACIA', '\bDRUGS?\b', '\bCHEMISTS?\b', '\bRX\b']
     source_categories: ['DRUG STORE']
 
   - key: grocery_supermarket
