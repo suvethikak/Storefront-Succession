@@ -101,47 +101,83 @@ Match rates (from the last build): 99.7–100% of on-corridor records in every s
 
 ## Sample queries
 
-Each query was run three ways:
-- **Expected:** computed directly from the tables with SQL.
-- **Baseline:** the same model (`gemini-3.5-flash`) with no tools and no system prompt.
-- **Agent:** our full Lead, Researchers and Writer pipeline.
+Paste any of these into the web app, or send them to `/chat`:
 
-Full answers and every tool call (with its `agent`) are in [`docs/samples/`](docs/samples/). To regenerate them, run `uv run run_samples.py`.
+```bash
+curl -s -X POST https://storefront-succession-git-895199835501.europe-west1.run.app/chat \
+  -H 'Content-Type: application/json' -d '{"message": "<question>"}' | jq .response
+```
+
+Each query was run three ways:
+- **Expected:** computed directly from `data/storefronts.duckdb` with the SQL shown. The tables trace back to the source datasets listed under [Data sources](#data-sources).
+- **Baseline:** the same model (`gemini-3.5-flash`) with no tools and no system prompt.
+- **Agent:** our full Lead → Researchers → Writer pipeline.
+
+The baseline and agent columns quote the saved answers directly. The full text of both answers and every tool call (with its `agent`) are in [`docs/samples/`](docs/samples/). To regenerate them, run `uv run run_samples.py`. Agent wording changes from run to run; the numbers should not.
 
 ### 1. On Myrtle Ave, what kinds of businesses that ran 10+ years closed since 2015, and what replaced them?
 
-- **Expected** (`closures` table, `corridor='myrtle_ave' AND long_running AND closed_year >= 2015`): about 30 long-running closures.
-  - By category: bodegas/delis 15, pharmacies 4, bars 2, phone/electronics 2, other chains 2, and a grocery, a restaurant, a services business and an auto dealer.
-  - Most have no recorded successor (17 unknown). The known successors are mixed: services 3, retail 2, restaurant 2, and one each of bar, bodega, pharmacy and vacant.
-  - Examples: Eckerd #5537 (60-36 Myrtle) → Walgreens; Vaqueros (1541 Myrtle) → Aby's Bar; Aryan Grocery (79-39 Myrtle) → The Corner Deli Grill; Rent-A-Center (56-52 Myrtle) → Purple Apple.
-- **Baseline:** describes the Fort Greene / Clinton Hill end of Myrtle Ave, which is not this corridor. It names closures (Associated Supermarket, Five Spot, Maggie Brown) that aren't in the data and gives generic gentrification explanations with no sources.
-- **Agent** (84 s, 22 tool calls; [full answer and trace](docs/samples/sample1.md)): lists the long-running closures by category with addresses and years (Goldstar Chen 22.3 yrs, Care Express Pharmacy 24.2 yrs, Caribe Billards 27.7 yrs, …) and a replacement table. Each fact is cited to a tool result. It notes that many storefronts have no recorded successor.
+**Expected answer.** About 30 long-running closures. By category: bodegas/delis 15, pharmacies 4, bars 2, phone/electronics 2, other chains 2, and one each of grocery, restaurant, services and auto. Most (17) have no recorded successor. The known successors are mixed: services 3, retail 2, restaurant 2, and one each of bar, bodega, pharmacy and vacant. Examples: Eckerd #5537 (60-36 Myrtle) → Walgreens; Vaqueros (1541 Myrtle) → Aby's Bar; Aryan Grocery (79-39 Myrtle) → The Corner Deli Grill.
+
+**Comes from:** table `closures` (built from DCWP `w7w3-xahh`/`m4ph-grrm`, NYS food `9a8c-vfzj`, SLA `9s3h-dpkz`/`6dg3-2z7i`, registry `92iy-9c3n`). The agent reaches it through the `find_closures` and `replacements` tools.
+
+```sql
+SELECT category, replaced_by_category, count(*) FROM closures
+WHERE corridor = 'myrtle_ave' AND long_running AND closed_year >= 2015 GROUP BY ALL ORDER BY 3 DESC;
+```
+
+| | Baseline (no tools, no system prompt) | Agent (84 s, 22 tool calls) |
+|---|---|---|
+| **Answer** | "The transformation of Myrtle Avenue in Brooklyn (specifically the stretch running through Fort Greene, Clinton Hill, and Bedford-Stuyvesant) since 2015 is a classic study in urban gentrification." | "Since 2015, 29 long-running businesses operating for 10 or more years closed on Myrtle Avenue, including several bodegas, pharmacies, electronics stores, and bars [E3]." |
+| **Specifics** | Associated Supermarket (490 Myrtle), Five Spot Soul Food, Maggie Brown, White Castle → "CityMD". All are on the Fort Greene end, outside this corridor, and none are in the data. | "Goldstar Chen Inc at 68-03 Myrtle Ave closed in 2022 after 22.3 years [E18]", "Care Express Pharmacy Inc at 64-16 Myrtle Ave closed in 2025 after 24.2 years [E9]", plus a replacement table. |
+| **Sources** | None | Every sentence cites an evidence ID that maps to a tool call |
+| **Gaps admitted** | None | Says many storefronts have no recorded successor |
+| **Matches expected?** | No: wrong stretch of Myrtle, and the businesses are unverifiable | Yes: 29 vs. ~30, same category mix |
 
 ### 2. Which pilot corridors lost the most laundromats and delis between 2013 and today?
 
-This one tests whether the agent admits a gap in the data.
+This one tests whether the agent admits a gap in the data instead of filling it.
 
-- **Expected** (`closures` and `businesses`):
-  - Bodega/deli closures since 2013: Nostrand 97, Myrtle 60, 5th Ave 49, Frederick Douglass 33, Roosevelt 27.
-  - **Laundromats after 2013 can't be counted.** Laundries appear only in the DCWP legacy export, which ends in October 2013, and 81 laundromats last seen in it have status unknown. The data does cover 2005–2013: Nostrand 30, Myrtle 24, Frederick Douglass 13, 5th Ave 10, Roosevelt 7.
-- **Baseline:** invents a "DCP Storefront Survey" with "24 study corridors" and names corridors outside our pilot (Grand Street, Jackson Ave, Fulton Street). No numbers.
-- **Agent** (116 s, 33 tool calls; [full answer and trace](docs/samples/sample2.md)): "Nostrand Ave lost the most bodega and deli businesses with 97 recorded closures, followed by Myrtle Ave with 60 … the dataset cannot determine which pilot corridor lost the most laundromats during this period because [the] DCWP legacy licensing data for laundromats ends in October 2013." The Press Researcher adds sourced reasons for a few Myrtle Ave closures, such as a building demolition (Myrtle Avenue Brooklyn Partnership) and a 2024 fire (Bushwick Daily).
+**Expected answer.** Bodega/deli closures since 2013: Nostrand 97, Myrtle 60, 5th Ave 49, Frederick Douglass 33, Roosevelt 27. **Laundromats after 2013 can't be counted.** Laundries appear only in the DCWP legacy export, which ends in October 2013, so 81 laundromats last seen there have status `unknown`. For 2005–2013 the counts are Nostrand 30, Myrtle 24, Frederick Douglass 13, 5th Ave 10, Roosevelt 7.
+
+**Comes from:** tables `closures` and `businesses`. Delis come from DCWP tobacco licenses and NYS food stores; laundromats come from DCWP historical `m4ph-grrm` only. The agent reaches them through the `category_trend` and `find_closures` tools.
+
+```sql
+SELECT corridor, count(*) FROM closures WHERE category = 'bodega_deli' AND closed_year >= 2013 GROUP BY 1 ORDER BY 2 DESC;
+SELECT corridor, count(*) FROM businesses WHERE category = 'laundromat_drycleaner' AND status = 'unknown' GROUP BY 1;
+```
+
+| | Baseline (no tools, no system prompt) | Agent (116 s, 33 tool calls) |
+|---|---|---|
+| **Answer** | "This question refers to the New York City Department of City Planning (DCP) Storefront Survey ... across 24 pilot commercial corridors." That survey and its corridors don't exist. | "Nostrand Ave lost the most bodega and deli businesses with 97 recorded closures, followed by Myrtle Ave with 60 closures [E11, E15]." |
+| **Specifics** | Names Grand Street, Fulton Street, Utica Ave and Church Ave, none of which are our pilot corridors. Gives no numbers, plus pandas code for a dataset that doesn't exist. | All five corridors' deli counts, plus examples: "Myrtle Market Place at 1218 Myrtle Ave closed in 2025 and was replaced by EJ Organic Market [E25]." |
+| **Sources** | None | Evidence IDs; Press findings are attributed to their outlets |
+| **Gaps admitted** | None: it says the laundromat losses are known | "The dataset cannot determine which pilot corridor lost the most laundromats during this period because ... legacy licensing data for laundromats ends in October 2013 [E5, E6]." |
+| **Matches expected?** | No | Yes: exact deli counts, and it refuses to count laundromats it can't see |
 
 ### 3. Do corridors with the biggest rent increases have higher turnover of long-running businesses?
 
-- **Expected** (`compare_corridors` over `closures`, `businesses` and `acs`):
+**Expected answer.**
 
-  | Corridor | Rent change (ACS 2011–15 → 2020–24) | Long-running closure rate since 2014 | Annual turnover |
-  |---|---|---|---|
-  | Myrtle Ave | +71.3% | 0.274 | 0.066 |
-  | Nostrand Ave | +62.9% | 0.292 | 0.108 |
-  | 5th Ave | +50.6% | 0.190 | 0.062 |
-  | Frederick Douglass Blvd | +49.4% | 0.265 | 0.083 |
-  | Roosevelt Ave | +39.7% | 0.167 | 0.063 |
+| Corridor | Rent change (ACS 2011–15 → 2020–24) | Long-running closure rate since 2014 | Annual turnover |
+|---|---|---|---|
+| Myrtle Ave | +71.3% | 0.274 | 0.066 |
+| Nostrand Ave | +62.9% | 0.292 | 0.108 |
+| 5th Ave | +50.6% | 0.190 | 0.062 |
+| Frederick Douglass Blvd | +49.4% | 0.265 | 0.083 |
+| Roosevelt Ave | +39.7% | 0.167 | 0.063 |
 
-  The Spearman rank correlation between rent change and long-running closure rate is **0.8**; between rent change and overall turnover it is 0.3. That suggests a pattern, but with n = 5 it is not conclusive, and it is correlation only.
-- **Baseline:** "the short answer is **yes**", supported by general urban-economics arguments and studies of San Francisco and London. Nothing about these corridors.
-- **Agent** (123 s, 33 tool calls; [full answer and trace](docs/samples/sample3.md)): reports the same table and the 0.8 / 0.3 rank correlations. It says the pattern is weaker for overall turnover, that five corridors can't settle it, and that the data can't show rent caused any closure.
+The Spearman rank correlation between rent change and long-running closure rate is **0.8**; between rent change and overall turnover it is **0.3**. That suggests a pattern, but with n = 5 it isn't conclusive, and it is correlation only.
+
+**Comes from:** tables `acs` (Census ACS `B25064` via api.census.gov), `closures` and `businesses`. The agent gets the joined table and the Spearman row from the `compare_corridors` tool (`metric=rent_pct_change`).
+
+| | Baseline (no tools, no system prompt) | Agent (123 s, 33 tool calls) |
+|---|---|---|
+| **Answer** | "Based on urban planning research, economic data, and case studies from major global cities, the short answer is **yes**." | "Corridors with the highest rent increases show a moderate positive correlation with higher closure rates among long-running businesses, though this relationship does not apply as strongly to overall annual business turnover [E3]." |
+| **Specifics** | Lease shocks, triple-net leases, "high-rent blight", and studies of San Francisco and London. Nothing about these corridors. | The table above with the same numbers, "a Spearman rank correlation of 0.8 [E3]" and "much weaker at 0.3". Also sourced press reasons, e.g. "According to News 12 in January 2025, Bushwick Public House (1288 Myrtle Ave) closed ... because the landlord tripled the rent [E27]." |
+| **Sources** | Names Pratt Center and ANHD research, but gives no links or numbers | Evidence IDs that map to `compare_corridors`, SQL and web results |
+| **Gaps admitted** | None: states causation as fact | "Restricted to only five pilot corridors ... any relationships identified between rent and business turnover are correlation only [E3]." |
+| **Matches expected?** | No data to compare | Yes: same table, same 0.8 / 0.3 |
 
 ### Edge cases
 
