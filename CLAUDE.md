@@ -4,17 +4,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Status
 
-Built and deployed. The NYC storefront agent described below replaces the course starter `wikipedia-deep-research`: `app.py` (agents, `/run`, `/chat`), `storefronts.py` (DuckDB queries), `web.py` (press search), `build_data.py`/`validate_data.py` (offline data build), `index.html` (bodega front end), plus the starter's unchanged `context_panel.py`/`context-panel.js`. The starter's `wikipedia.py` has been removed. "Planned architecture" below describes what was built.
+Built and deployed. The NYC storefront agent described below replaces the course starter `wikipedia-deep-research`: `app.py` (agents, `/run`, `/chat`) at the root; the `storefront/` package (`storefronts.py` DuckDB queries, `web.py` press search, `addresses.py` address normalization shared with the build, and the starter's unchanged `context_panel.py`/`context-panel.js`); `static/index.html` (bodega front end); and offline tools in `scripts/` (`validate_data.py`, `build_data.py`, `run_samples.py`). Scripts find the repo root via `Path(__file__).resolve().parent.parent` and add it to `sys.path`. Nothing in `scripts/` is imported by the server. The starter's `wikipedia.py` has been removed. "Planned architecture" below describes what was built.
 
 ## Commands
 
 - Setup: create `.env` next to `app.py` (no `.env.example` is committed; only `CENSUS_API_KEY` is needed, and only for rebuilding the data), then `gcloud auth application-default login` for Vertex AI.
 - Run locally: `uv run app.py`, then open http://localhost:8000.
 - Run one question in the terminal (prints the activity stream, the report, and a citation check): `uv run app.py --ask "question" [--corridor myrtle_ave]`.
-- Smoke-test the data tools without a model: `uv run python -c "import storefronts as s; print(s.find_closures('myrtle', since_year=2015))"`.
-- Data coverage check: `uv run validate_data.py` (`--refresh` to re-download). It caches raw Socrata pulls in `data/raw/<source>__<corridor>.json` and writes `data/VALIDATION.md`. Source field mappings live in its `SOURCES` dict; reuse them in `build_data.py`. ACS needs `CENSUS_API_KEY` in `.env` (the Census API now rejects keyless calls with a 302).
-- Build the database: `uv run build_data.py` (`--refresh` re-downloads first). It writes `data/storefronts.duckdb` (committed, ~3 MB) and `data/BUILD_REPORT.md` (match rates, per-corridor counts). Inspect it with `uv run python -c "import duckdb; print(duckdb.connect('data/storefronts.duckdb', read_only=True).sql('...'))"`.
-- Regenerate the README's sample answers (baseline vs agent, with traces) into `docs/samples/`: `uv run run_samples.py [1 2 3]`.
+- Smoke-test the data tools without a model: `uv run python -c "from storefront import storefronts as s; print(s.find_closures('myrtle', since_year=2015))"`.
+- Data coverage check: `uv run scripts/validate_data.py` (`--refresh` to re-download). It caches raw Socrata pulls in `data/raw/<source>__<corridor>.json` and writes `data/VALIDATION.md`. Source field mappings live in its `SOURCES` dict; `scripts/build_data.py` imports them. ACS needs `CENSUS_API_KEY` in `.env` (the Census API now rejects keyless calls with a 302).
+- Build the database: `uv run scripts/build_data.py` (`--refresh` re-downloads first). It writes `data/storefronts.duckdb` (committed, ~3 MB) and `data/BUILD_REPORT.md` (match rates, per-corridor counts). Inspect it with `uv run python -c "import duckdb; print(duckdb.connect('data/storefronts.duckdb', read_only=True).sql('...'))"`.
+- Regenerate the README's sample answers (baseline vs agent, with traces) into `docs/samples/`: `uv run scripts/run_samples.py [1 2 3]`.
 - Deploy: push to `main`. A Cloud Build trigger (region northamerica-northeast1, buildpacks, entrypoint `uvicorn app:app --host 0.0.0.0 --port $PORT`) updates the Cloud Run service `storefront-succession-git` in europe-west1. Service settings such as timeout, memory and access are set on the service, not in the repo.
 - Add a dependency: `uv add <pkg>` (keeps `uv.lock`, which must be committed, in sync).
 - No tests or linter are configured yet.
@@ -25,15 +25,15 @@ Built and deployed. The NYC storefront agent described below replaces the course
 - `Research` dataclass: the per-run state passed as the run `context`, holding the hooks, a researcher counter, and the `findings` list. The model never sees it.
 - `research` tool: written out by hand instead of using `researcher.as_tool()`, so that each call does `researcher.clone(name=f"Researcher {n}")` and `Runner.run(...)` in a fresh context with the shared hooks. That gives each Researcher its own column in the context panel. `MAX_RESEARCHERS` is enforced here, in code.
 - `deep_research()`: runs the Lead (which fans out by calling `research` several times in one turn and replies `DONE`), then makes a single Writer call outside the loop that sees only the question and the joined findings.
-- `/run` (GET, SSE): emits events `start` (with `run_id`), `context`, `activity`, `done` (with `markdown`), and `error`. Cancelling the task when the client disconnects stops token spend. `index.html` consumes these through `EventSource`.
-- Context panel: `add_context_panel(app, sessions)` adds `/context` and `/context-panel.js`. `sessions[run_id]` is an `AgentContexts`. `PanelHooks` (passed as `hooks=` to every `Runner.run`) records each agent's messages and emits the `context`/`activity` events. Keep `context_panel.py` and `context-panel.js` unchanged. To add custom events, subclass `PanelHooks`; it is also the natural place to collect `tool_calls` with an `agent` field for `/chat`.
+- `/run` (GET, SSE): emits events `start` (with `run_id`), `context`, `activity`, `done` (with `markdown`), and `error`. Cancelling the task when the client disconnects stops token spend. `static/index.html` consumes these through `EventSource`.
+- Context panel: `add_context_panel(app, sessions)` adds `/context` and `/context-panel.js`. `sessions[run_id]` is an `AgentContexts`. `PanelHooks` (passed as `hooks=` to every `Runner.run`) records each agent's messages and emits the `context`/`activity` events. Keep `storefront/context_panel.py` and `storefront/context-panel.js` unchanged (and in the same folder: the .py serves the .js from its own directory). To add custom events, subclass `PanelHooks`; it is also the natural place to collect `tool_calls` with an `agent` field for `/chat`.
 - Sessions are in memory in a single process, so Cloud Run runs with max instances 1 (otherwise a `/chat` follow-up to a `CLARIFY` question can land on an instance that doesn't have the session).
 
 ## What this is
 
 "What Was Here Before": a deep-research agent that traces how long-running small businesses on NYC commercial corridors (laundromats, bodegas, delis, family restaurants) close and what replaces them (cafés, bars, chains, vacancy), and how that turnover relates to rent and demographic change. Target user: someone scouting a location on an NYC corridor.
 
-It is built by extending the starter (same stack, same flat layout, same Lead → parallel Researchers → Writer pattern), swapping Wikipedia for NYC storefront data. The Lead/`research`/Writer structure, `Research`, `/run`, and the panel stay. What changes: the tools (the starter's `wikipedia.py` → `storefronts.py` + `web.py`), the prompts, the inputs (a question plus an optional corridor picker instead of a start URL), and `index.html`.
+It is built by extending the starter (same stack, same Lead → parallel Researchers → Writer pattern), swapping Wikipedia for NYC storefront data. The Lead/`research`/Writer structure, `Research`, `/run`, and the panel stay. What changes: the tools (the starter's `wikipedia.py` → `storefronts.py` + `web.py`), the prompts, the inputs (a question plus an optional corridor picker instead of a start URL), and `index.html`.
 
 ## Hard requirements (from the assignment; they're graded)
 
@@ -47,9 +47,9 @@ It is built by extending the starter (same stack, same flat layout, same Lead �
 
 ## Planned architecture
 
-**Offline (`build_data.py`)**: download the sources → filter to the pilot ZIPs → normalize addresses to `HOUSE_NUMBER + STANDARDIZED_STREET + ZIP` (use BBL where available; handle aliases such as Frederick Douglass Blvd = 8th Ave) → assign a corridor from `data/corridors.yaml` → classify into about 15 categories from `data/categories.yaml` → write `data/storefronts.duckdb` with the tables `businesses`, `storefront_timeline`, `closures`, `vacancy`, `acs`. Validation output (row counts, date ranges, match rates) goes to `data/VALIDATION.md`. Log every download in `data/SOURCES.md`. Never edit `data/raw/` (gitignored).
+**Offline (`scripts/build_data.py`)**: download the sources → filter to the pilot ZIPs → normalize addresses to `HOUSE_NUMBER + STANDARDIZED_STREET + ZIP` (use BBL where available; handle aliases such as Frederick Douglass Blvd = 8th Ave) → assign a corridor from `data/corridors.yaml` → classify into about 15 categories from `data/categories.yaml` → write `data/storefronts.duckdb` with the tables `businesses`, `storefront_timeline`, `closures`, `vacancy`, `acs`. Validation output (row counts, date ranges, match rates) goes to `data/VALIDATION.md`. Log every download in `data/SOURCES.md`. Never edit `data/raw/` (gitignored).
 
-**Data access**: `storefronts.py` holds DuckDB query functions (replacing the starter's `wikipedia.py`) and `web.py` handles web search/fetch. `app.py` wraps them as `@function_tool`. **Every tool returns JSON with `evidence_id`, `source`, `params`, `rows` (capped), and `note`**, catches its own errors, and returns `rows: []` plus a note when nothing matches. The citation system depends on this envelope.
+**Data access**: `storefront/storefronts.py` holds DuckDB query functions (replacing the starter's `wikipedia.py`) and `storefront/web.py` handles web search/fetch. `app.py` wraps them as `@function_tool`. **Every tool returns JSON with `evidence_id`, `source`, `params`, `rows` (capped), and `note`**, catches its own errors, and returns `rows: []` plus a note when nothing matches. The citation system depends on this envelope.
 
 **Agents (`app.py`)**:
 - **Lead** (tools: `list_corridors`, `research`). If the question lacks a where, when, or what, it replies `CLARIFY: <question>` and the app returns that without running research. Otherwise it calls `research(task, specialty)` 2–4 times in one turn, follows up on gaps at most twice, and ends with `DONE`.
@@ -73,10 +73,10 @@ It is built by extending the starter (same stack, same flat layout, same Lead �
   - The storefront registry is **one** stacked dataset, `92iy-9c3n`. Its `reporting_year` takes values from "2019 and 2020" through "2025". Its BBL identifies a building, not a storefront.
 - Use tobacco/cigarette retail dealer licenses as the stand-in for bodegas and delis.
 - SLA "original issue" dates are only about the current license cycle, so they can't show how long a business has been open.
-- Single license records undercount long-running businesses because they get reissued. `build_data.py` should chain records by address key plus name.
+- Single license records undercount long-running businesses because they get reissued. `scripts/build_data.py` chains records by address key plus name.
 - Street spellings vary widely (e.g. "FREDRICK DOUGLASS BL", "*8 Avenue"). `data/corridors.yaml` has `like_terms` (a server-side prefilter) and `street_patterns` (regexes that decide). Recheck the street-match % in VALIDATION.md after editing either.
 
-## Agent wiring (`app.py`, `storefronts.py`)
+## Agent wiring (`app.py`, `storefront/storefronts.py`)
 
 - `storefronts.py` holds pure query functions that return `{tool, source, params, rows, total_rows, note}`. In `app.py`, each `@function_tool` wrapper passes the result through `_cite()`, which stamps it with `E#` from the run's `EvidenceLog`. `COVERAGE` gives per-category caveats (e.g. laundries are invisible after 2013), and these are injected into `note`.
 - Specialties live in `SPECIALTIES` (licenses, storefront, demographics, press). Press uses `web.py`: Gemini with Google Search grounding (thinking off, ~4 s/search, retries on 429). It keeps only grounding-supported sentences per source and resolves the vertexaisearch redirect URLs. `fetch_page` refuses non-public hosts, including the Cloud Run metadata server, and checks every redirect hop. `research(task, specialty)` clones the one `researcher` with that specialty's tools and focus.
@@ -85,7 +85,7 @@ It is built by extending the starter (same stack, same flat layout, same Lead �
 - `/chat` keeps the Project 1 shape (`response`, `session_id`, `tool_calls[{name,args,result,agent}]`) plus per-session history, so a reply to a `CLARIFY` question is understood in context.
 - `ResearchHooks.on_tool_end` records every tool call as `{agent, name, arguments, evidence_id, output}` in `Research.tool_calls`, for `/chat`.
 
-## Build design (`build_data.py`)
+## Build design (`scripts/build_data.py`, `storefront/addresses.py`)
 
 - `address_key = "<corridor>|<house number>"`. The street is implied, because every row was already matched to one corridor street. Queens numbers are normalized to `NN-NN`. Registry rows take their number from `property_street_address_or` (the storefront), not from `property_number` (the building).
 - Merging: within one address_key, records are union-found into a business when their names are equal, one contains the other, or they share ≥50% of their distinctive words (generic words such as DELI/CORP/LLC are ignored).

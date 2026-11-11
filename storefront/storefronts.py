@@ -14,9 +14,9 @@ from pathlib import Path
 import duckdb
 import yaml
 
-from build_data import house_number, split_address
+from storefront.addresses import house_number, split_address
 
-HERE = Path(__file__).parent
+HERE = Path(__file__).resolve().parent.parent  # the repo root
 DB_PATH = HERE / "data" / "storefronts.duckdb"
 MAX_ROWS = 25
 

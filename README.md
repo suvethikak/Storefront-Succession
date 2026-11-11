@@ -32,7 +32,7 @@ All sources are public. The NYC and NYS datasets need no account. Each one feeds
 | 4 | [Liquor Authority: Active Licenses](https://data.ny.gov/d/9s3h-dpkz) and [Inactive Licenses](https://data.ny.gov/d/6dg3-2z7i) | NYS State Liquor Authority (SLA), `9s3h-dpkz`, `6dg3-2z7i` | A liquor license (bar, restaurant, grocery beer, liquor store) | When bars and restaurants arrived and when they lapsed | Licenses |
 | 5 | [Storefronts Reported Vacant or Not](https://data.cityofnewyork.us/d/92iy-9c3n) | NYC Dept. of Finance (Local Law 157 storefront registry), `92iy-9c3n` | One ground-floor storefront filing per reporting year | Storefront vacancy on 12/31 and the occupant's primary business activity, from the 2019/20 through 2025 reporting years | Storefront |
 | 6 | [American Community Survey 5-year](https://www.census.gov/data/developers/data-sets/acs-5year.html) | U.S. Census Bureau, tables `B25064` (median gross rent), `B19013` (median household income), `B01003` (population) | A ZIP Code Tabulation Area (ZCTA) | Rent, income and population for 2011–2015 vs. the latest 5-year period | Demographics |
-| 7 | Reports and local press (Patch, THE CITY, Eater NY, neighborhood blogs, city reports) | Live **Google Search via Gemini grounding** on Vertex AI, at question time ([`web.py`](web.py)) | A web source and the sentences it supports | The only source that can say **why** a business closed. Each claim is attributed to its outlet and URL. | Press |
+| 7 | Reports and local press (Patch, THE CITY, Eater NY, neighborhood blogs, city reports) | Live **Google Search via Gemini grounding** on Vertex AI, at question time ([`storefront/web.py`](storefront/web.py)) | A web source and the sentences it supports | The only source that can say **why** a business closed. Each claim is attributed to its outlet and URL. | Press |
 
 ### How to load the data
 
@@ -46,8 +46,8 @@ To pull everything for the pilot corridors and regenerate the coverage report:
 
 ```bash
 uv sync
-uv run validate_data.py            # downloads to data/raw/ (gitignored, cached) and writes data/VALIDATION.md
-uv run validate_data.py --refresh  # re-download instead of using the cache
+uv run scripts/validate_data.py            # downloads to data/raw/ (gitignored, cached) and writes data/VALIDATION.md
+uv run scripts/validate_data.py --refresh  # re-download instead of using the cache
 ```
 
 ACS requires a free Census API key ([sign up here](https://api.census.gov/data/key_signup.html)). Put it in `.env` as `CENSUS_API_KEY=...`. Without the key, the script skips the ACS step and says so in the report. A `SOCRATA_APP_TOKEN` is optional and only raises rate limits.
@@ -56,11 +56,11 @@ The data was last downloaded on 2026-11-04.
 
 ### Building the database
 
-The agent doesn't query the open-data APIs live. An offline step, [`build_data.py`](build_data.py), turns the cached pulls into `data/storefronts.duckdb` (about 3 MB, committed to the repo):
+The agent doesn't query the open-data APIs live. An offline step, [`scripts/build_data.py`](scripts/build_data.py), turns the cached pulls into `data/storefronts.duckdb` (about 3 MB, committed to the repo):
 
 ```bash
-uv run build_data.py            # uses data/raw/ (fetches anything missing)
-uv run build_data.py --refresh  # re-download all sources first
+uv run scripts/build_data.py            # uses data/raw/ (fetches anything missing)
+uv run scripts/build_data.py --refresh  # re-download all sources first
 ```
 
 The build:
@@ -113,7 +113,7 @@ Each query was run three ways:
 - **Baseline:** the same model (`gemini-3.5-flash`) with no tools and no system prompt.
 - **Agent:** our full Lead → Researchers → Writer pipeline.
 
-The baseline and agent columns quote the saved answers directly. The full text of both answers and every tool call (with its `agent`) are in [`docs/samples/`](docs/samples/). To regenerate them, run `uv run run_samples.py`. Agent wording changes from run to run; the numbers should not.
+The baseline and agent columns quote the saved answers directly. The full text of both answers and every tool call (with its `agent`) are in [`docs/samples/`](docs/samples/). To regenerate them, run `uv run scripts/run_samples.py`. Agent wording changes from run to run; the numbers should not.
 
 ### 1. On Myrtle Ave, what kinds of businesses that ran 10+ years closed since 2015, and what replaced them?
 
@@ -187,6 +187,24 @@ The Spearman rank correlation between rent change and long-running closure rate 
 | "What about Astoria?" | Says Astoria isn't covered and offers the pilot corridors. |
 | "Why did the Rite Aid on Frederick Douglass Blvd close?" | The Press Researcher finds Rite Aid's Chapter 11 bankruptcy and attributes it to named outlets. The Writer gives a reason only when a press source supports it. |
 
+## Repo layout
+
+```
+app.py             the agents (Lead, Researchers, Writer) and the web server: /, /run, /chat
+storefront/        code the app imports
+  storefronts.py     DuckDB query functions behind the data tools
+  web.py             press search (Gemini + Google Search grounding) and page fetch
+  addresses.py       address normalization, shared with the offline build
+  context_panel.py   the starter's context panel (+ context-panel.js)
+static/index.html  the front end
+scripts/           offline tools, not used by the server
+  validate_data.py   download sources and write data/VALIDATION.md
+  build_data.py      build data/storefronts.duckdb and data/BUILD_REPORT.md
+  run_samples.py     regenerate docs/samples/
+data/              corridor and category definitions, the built database, reports
+docs/samples/      saved sample answers and traces
+```
+
 ## Running the app
 
 The app has four agent types: a **Lead** that plans, four kinds of **Researcher** (Licenses, Storefront, Demographics, Press) that run in parallel in fresh contexts, and a **Writer** that produces the cited report. Every tool result gets an evidence ID (`E1`, `E2`, ...). The report cites those IDs, and code checks that every ID it cites exists.
@@ -206,7 +224,7 @@ uv run app.py                           # http://localhost:8000
 
 The page opens on an NYC bodega storefront, drawn in HTML/CSS: a brick façade, a back-lit DELI · GROCERY sign, a neon OPEN sign, marker posters and a bodega cat. Click (or press Enter on) the doors and they swing open as the view moves through the doorway. Inside is a chalkboard bodega menu: corridors are menu items with dotted price leaders, example questions are "Today's specials", researchers show up as order tickets, and citations look like price tags. "Skip the door", reduced-motion settings and `?q=` links skip the animation.
 
-`index.html` shows:
+[`static/index.html`](static/index.html) shows:
 - what the agent explores, who it's for, and how to use it
 - corridor cards with live stats, which also work as the corridor picker
 - example questions you can click

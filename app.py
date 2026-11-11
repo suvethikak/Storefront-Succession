@@ -16,9 +16,9 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel
 
-import storefronts as sf
-import web
-from context_panel import AgentContexts, PanelHooks, add_context_panel
+from storefront import storefronts as sf
+from storefront import web
+from storefront.context_panel import AgentContexts, PanelHooks, add_context_panel
 
 load_dotenv(Path(__file__).parent / ".env")
 
@@ -466,7 +466,7 @@ add_context_panel(app, sessions)
 @app.get("/")
 def index():
     # no-cache: browsers otherwise keep serving an old page after a redeploy
-    return FileResponse(HERE / "index.html", headers={"Cache-Control": "no-cache"})
+    return FileResponse(HERE / "static" / "index.html", headers={"Cache-Control": "no-cache"})
 
 
 @app.get("/corridors")

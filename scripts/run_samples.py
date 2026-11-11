@@ -1,7 +1,7 @@
 """Run the README's sample queries two ways and save both answers plus the agent's trace to docs/samples/.
 
-    uv run run_samples.py          # all three
-    uv run run_samples.py 2        # just sample 2
+    uv run scripts/run_samples.py          # all three
+    uv run scripts/run_samples.py 2        # just sample 2
 
 1. Baseline: the same model (gemini-3.5-flash) with no tools and no system prompt.
 2. Agent: the full Lead -> Researchers -> Writer pipeline.
@@ -15,16 +15,18 @@ from pathlib import Path
 
 from google.genai import types
 
-import web
-from app import ResearchHooks, check_citations, deep_research
-from context_panel import AgentContexts
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # the repo root, for app and storefront
+
+from app import ResearchHooks, check_citations, deep_research  # noqa: E402
+from storefront import web  # noqa: E402
+from storefront.context_panel import AgentContexts  # noqa: E402
 
 SAMPLES = [
     "On Myrtle Ave, what kinds of businesses that ran 10+ years closed since 2015, and what replaced them?",
     "Which pilot corridors lost the most laundromats and delis between 2013 and today?",
     "Do corridors with the biggest rent increases have higher turnover of long-running businesses?",
 ]
-OUT = Path(__file__).parent / "docs" / "samples"
+OUT = Path(__file__).resolve().parent.parent / "docs" / "samples"
 
 
 def baseline(question: str) -> str:
