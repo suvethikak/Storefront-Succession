@@ -4,11 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Status
 
-The repo currently holds the unmodified course starter `wikipedia-deep-research` (`app.py`, `wikipedia.py`, `context_panel.py`, `context-panel.js`, `index.html`). The NYC storefront version described under "Planned architecture" is not built yet. Update this file as pieces land.
+Built and deployed. The NYC storefront agent described below replaces the course starter `wikipedia-deep-research`: `app.py` (agents, `/run`, `/chat`), `storefronts.py` (DuckDB queries), `web.py` (press search), `build_data.py`/`validate_data.py` (offline data build), `index.html` (bodega front end), plus the starter's unchanged `context_panel.py`/`context-panel.js`. The starter's `wikipedia.py` has been removed. "Planned architecture" below describes what was built.
 
 ## Commands
 
-- Setup: create `.env` next to `app.py` (no `.env.example` was committed; the starter needs `WIKIMEDIA_USERNAME`/`WIKIMEDIA_PASSWORD`; this goes away once `wikipedia.py` is replaced), then `gcloud auth application-default login` for Vertex AI.
+- Setup: create `.env` next to `app.py` (no `.env.example` is committed; only `CENSUS_API_KEY` is needed, and only for rebuilding the data), then `gcloud auth application-default login` for Vertex AI.
 - Run locally: `uv run app.py`, then open http://localhost:8000.
 - Run one question in the terminal (prints the activity stream, the report, and a citation check): `uv run app.py --ask "question" [--corridor myrtle_ave]`.
 - Smoke-test the data tools without a model: `uv run python -c "import storefronts as s; print(s.find_closures('myrtle', since_year=2015))"`.
@@ -27,13 +27,13 @@ The repo currently holds the unmodified course starter `wikipedia-deep-research`
 - `deep_research()`: runs the Lead (which fans out by calling `research` several times in one turn and replies `DONE`), then makes a single Writer call outside the loop that sees only the question and the joined findings.
 - `/run` (GET, SSE): emits events `start` (with `run_id`), `context`, `activity`, `done` (with `markdown`), and `error`. Cancelling the task when the client disconnects stops token spend. `index.html` consumes these through `EventSource`.
 - Context panel: `add_context_panel(app, sessions)` adds `/context` and `/context-panel.js`. `sessions[run_id]` is an `AgentContexts`. `PanelHooks` (passed as `hooks=` to every `Runner.run`) records each agent's messages and emits the `context`/`activity` events. Keep `context_panel.py` and `context-panel.js` unchanged. To add custom events, subclass `PanelHooks`; it is also the natural place to collect `tool_calls` with an `agent` field for `/chat`.
-- Sessions are in memory in a single process, so Cloud Run should run one instance (or accept that runs are lost when a request lands on another instance).
+- Sessions are in memory in a single process, so Cloud Run runs with max instances 1 (otherwise a `/chat` follow-up to a `CLARIFY` question can land on an instance that doesn't have the session).
 
 ## What this is
 
 "What Was Here Before": a deep-research agent that traces how long-running small businesses on NYC commercial corridors (laundromats, bodegas, delis, family restaurants) close and what replaces them (cafés, bars, chains, vacancy), and how that turnover relates to rent and demographic change. Target user: someone scouting a location on an NYC corridor.
 
-It is built by extending the starter (same stack, same flat layout, same Lead → parallel Researchers → Writer pattern), swapping Wikipedia for NYC storefront data. The Lead/`research`/Writer structure, `Research`, `/run`, and the panel stay. What changes: the tools (`wikipedia.py` → `storefronts.py` + `web.py`), the prompts, the inputs (a question plus an optional corridor picker instead of a start URL), and `index.html`. The README and `pyproject.toml` name/description also still describe the starter and need rewriting.
+It is built by extending the starter (same stack, same flat layout, same Lead → parallel Researchers → Writer pattern), swapping Wikipedia for NYC storefront data. The Lead/`research`/Writer structure, `Research`, `/run`, and the panel stay. What changes: the tools (the starter's `wikipedia.py` → `storefronts.py` + `web.py`), the prompts, the inputs (a question plus an optional corridor picker instead of a start URL), and `index.html`.
 
 ## Hard requirements (from the assignment; they're graded)
 
@@ -49,7 +49,7 @@ It is built by extending the starter (same stack, same flat layout, same Lead �
 
 **Offline (`build_data.py`)**: download the sources → filter to the pilot ZIPs → normalize addresses to `HOUSE_NUMBER + STANDARDIZED_STREET + ZIP` (use BBL where available; handle aliases such as Frederick Douglass Blvd = 8th Ave) → assign a corridor from `data/corridors.yaml` → classify into about 15 categories from `data/categories.yaml` → write `data/storefronts.duckdb` with the tables `businesses`, `storefront_timeline`, `closures`, `vacancy`, `acs`. Validation output (row counts, date ranges, match rates) goes to `data/VALIDATION.md`. Log every download in `data/SOURCES.md`. Never edit `data/raw/` (gitignored).
 
-**Data access**: `storefronts.py` holds DuckDB query functions (the counterpart of the starter's `wikipedia.py`) and `web.py` handles web search/fetch. `app.py` wraps them as `@function_tool`. **Every tool returns JSON with `evidence_id`, `source`, `params`, `rows` (capped), and `note`**, catches its own errors, and returns `rows: []` plus a note when nothing matches. The citation system depends on this envelope.
+**Data access**: `storefronts.py` holds DuckDB query functions (replacing the starter's `wikipedia.py`) and `web.py` handles web search/fetch. `app.py` wraps them as `@function_tool`. **Every tool returns JSON with `evidence_id`, `source`, `params`, `rows` (capped), and `note`**, catches its own errors, and returns `rows: []` plus a note when nothing matches. The citation system depends on this envelope.
 
 **Agents (`app.py`)**:
 - **Lead** (tools: `list_corridors`, `research`). If the question lacks a where, when, or what, it replies `CLARIFY: <question>` and the app returns that without running research. Otherwise it calls `research(task, specialty)` 2–4 times in one turn, follows up on gaps at most twice, and ends with `DONE`.

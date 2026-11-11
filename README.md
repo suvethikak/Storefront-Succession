@@ -231,6 +231,6 @@ Service settings, which persist across deploys:
 |---|---|---|
 | Request timeout | 300 s (5 min) | Same as the graders' wait. Runs take 1–2 min, and the app keeps itself under 270 s: researchers stop at 110 s, the research phase at 170 s, and the Writer gets the time that's left. |
 | Memory | 1 GiB | |
-| Session affinity | on | Run state and chat sessions are kept in memory |
-| Max instances | 3 | |
+| Session affinity | on | Run state is kept in memory |
+| Max instances | 1 | Chat sessions live in one process's memory, so a `/chat` reply to a clarifying question must reach the same instance (session affinity only helps browsers, not `curl`) |
 | Access | unauthenticated | |

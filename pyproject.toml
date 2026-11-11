@@ -1,7 +1,7 @@
 [project]
-name = "wikipedia-deep-research"
+name = "storefront-succession"
 version = "0.1.0"
-description = "Deep research over Wikipedia: a lead fans out researchers that walk Wikipedia's links, then a writer turns their findings into a cited report"
+description = "What Was Here Before: a deep-research agent that traces how long-running small businesses on NYC commercial corridors close, what replaces them, and how that lines up with rent and demographic change"
 requires-python = ">=3.10"
 dependencies = [
     "fastapi>=0.109.0",

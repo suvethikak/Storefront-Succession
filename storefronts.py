@@ -1,6 +1,6 @@
 """Query functions over data/storefronts.duckdb: the data layer the Researchers' tools call.
 
-The counterpart of the starter's wikipedia.py. Every function returns a plain dict:
+Every function returns a plain dict:
     {"tool", "source", "params", "rows", "total_rows", "note"}
 and app.py stamps it with an evidence_id (E1, E2, ...) through EvidenceLog before the model sees it.
 Empty results come back as rows: [] with a note saying why, never as an exception.
